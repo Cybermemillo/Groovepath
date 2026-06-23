@@ -13,6 +13,7 @@ import * as backingUi from './backing-track-ui.js';
 import * as improvisation from './improvisation.js';
 import * as improUi from './improvisation-ui.js';
 import { initTooltip } from './tooltip.js';
+import { initHelpModal } from './help-modal.js';
 
 /* ─── State ─── */
 const state = {
@@ -287,6 +288,7 @@ export function init() {
   buildFretRange();
   fretboard.buildFretboard(state);
   initTooltip();
+  initHelpModal();
 
   setTheme(true);
 
@@ -476,6 +478,10 @@ export function init() {
 
   backingUi.onBpmChange((bpm) => {
     backing.setBpm(bpm);
+  });
+
+  backingUi.onVolumeChange((v) => {
+    backing.setVolume(v);
   });
 
   backingUi.bindStyleButtons((style) => {

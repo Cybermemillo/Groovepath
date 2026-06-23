@@ -28,6 +28,7 @@
       <div class="header-controls">
         <span class="volume-label">Volumen</span>
         <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5" title="Volumen" aria-label="Volumen" />
+        <button id="helpBtn" class="btn-icon help-btn" title="Ayuda" aria-label="Ayuda">?</button>
         <button id="themeToggle" class="btn-icon" title="Cambiar tema" aria-label="Cambiar tema">
           <svg id="themeIconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -213,6 +214,10 @@
       </div>
       <div class="backing-controls">
         <button id="backingPlay" class="btn-backing-play">▶</button>
+        <div class="backing-vol-wrap">
+          <label class="bpm-label">Vol</label>
+          <input type="range" id="backingVolume" min="0" max="1.2" step="0.01" value="1" />
+        </div>
         <div class="bpm-wrap">
           <label class="bpm-label">BPM</label>
           <input type="range" id="bpmSlider" min="60" max="180" value="100" step="1" />
@@ -341,6 +346,147 @@
 
   <!-- ===== TOOLTIP ===== -->
   <div class="note-tooltip" id="noteTooltip" aria-hidden="true"></div>
+
+  <!-- ===== HELP MODAL ===== -->
+  <div class="help-modal-backdrop" id="helpModalBackdrop">
+    <div class="help-modal" id="helpModal">
+      <button class="help-modal-close" id="helpModalClose" aria-label="Cerrar ayuda">&times;</button>
+      <h2>&iquest;C&oacute;mo usar BassLab?</h2>
+
+      <section class="help-section">
+        <h3>1. El diapas&oacute;n</h3>
+        <p>El diapas&oacute;n representa un bajo de 4 cuerdas (E-A-D-G de abajo arriba). Cada punto es una nota en su traste.</p>
+        <ul>
+          <li><strong>Ra&iacute;z:</strong> punto grande brillante. Es la nota base de la escala seleccionada.</li>
+          <li><strong>Escala:</strong> puntos con su color. Son las notas que pertenecen a la escala activa.</li>
+          <li><strong>Arpegio:</strong> puntos con forma de diamante y grado (R, 3, 5, b7&hellip;). Son las notas del acorde.</li>
+          <li>Usa el toggle <em>&quot;Mostrar nombres&quot;</em> para ocultar o mostrar la notaci&oacute;n de cada traste.</li>
+          <li>Con los selectores de <em>&quot;Rango de trastes&quot;</em> puedes limitar la zona visible (por ejemplo, del traste 1 al 5). Hay presets r&aacute;pidos como 1&ndash;5 o 5&ndash;9.</li>
+          <li>Los trastes fuera del rango se aten&uacute;an visualmente.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>2. Escalas y arpegios</h3>
+        <p>En el panel izquierdo encontrar&aacute;s los selectores principales:</p>
+        <ul>
+          <li><strong>Nota ra&iacute;z:</strong> elige la tonalidad (C, C#, D&hellip;).</li>
+          <li><strong>Escala:</strong> elige entre mayor, menor natural, pentat&oacute;nica mayor, pentat&oacute;nica menor, blues, etc.</li>
+          <li><strong>Arpegio:</strong> selecciona el tipo de acorde (mayor, menor, 7, maj7, m7, m7b5, dim, aug).</li>
+          <li>Activa <em>&quot;Solo arpegio&quot;</em> para que el diapas&oacute;n muestre exclusivamente las notas del acorde, ocultando el resto de la escala.</li>
+          <li>Los grados del arpegio se muestran como texto en cada diamante (R = ra&iacute;z, 3 = tercera, 5 = quinta, b7 = s&eacute;ptima menor, etc.).</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>3. Sonido</h3>
+        <ul>
+          <li>Haz <strong>clic en cualquier punto</strong> del diapas&oacute;n para escuchar esa nota.</li>
+          <li>El sonido es un sintetizador de bajo monof&oacute;nico con envolvente ADSR y filtro paso bajo.</li>
+          <li>El <strong>control de volumen</strong> del header regula el nivel del sintetizador.</li>
+          <li>Al hacer clic en un punto, ver&aacute;s un breve destello de feedback visual.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>4. Afinador</h3>
+        <ul>
+          <li>Activa el <strong>micr&oacute;fono</strong> con el bot&oacute;n del panel del afinador.</li>
+          <li>Toca una nota en tu bajo real. El afinador te muestra:
+            <ul>
+              <li>La nota detectada m&aacute;s cercana.</li>
+              <li>Los <strong>c&eacute;ntimos</strong> de desviaci&oacute;n (positivo = agudo, negativo = grave).</li>
+              <li>Una barra visual que te indica qu&eacute; tan afinado est&aacute;s.</li>
+            </ul>
+          </li>
+          <li>Cuando el afinador est&aacute; activo, la nota detectada se refleja tambi&eacute;n en el diapas&oacute;n.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>5. Modo Entrenamiento &mdash; &laquo;Toca la nota&raquo;</h3>
+        <ul>
+          <li>Pulsa el bot&oacute;n <strong>&laquo;Toca la nota&raquo;</strong> en el panel del afinador para iniciar el entrenamiento.</li>
+          <li>La aplicaci&oacute;n te propone una <strong>nota objetivo</strong> (resaltada en el diapas&oacute;n).</li>
+          <li>Toca esa nota en tu bajo. El sistema eval&uacute;a:
+            <ul>
+              <li><strong>Afinaci&oacute;n:</strong> cu&aacute;ntos c&eacute;ntimos te desv&iacute;as.</li>
+              <li><strong>Acierto:</strong> si la nota correcta fue tocada.</li>
+            </ul>
+          </li>
+          <li>Tienes una <strong>cuenta atr&aacute;s</strong> (por defecto 10 segundos) para acertar cada nota.</li>
+          <li><strong>Racha:</strong> aciertos consecutivos. Cada 5 aciertos seguidos aumenta el multiplicador de puntuaci&oacute;n.</li>
+          <li>La sesi&oacute;n termina al pulsar el bot&oacute;n de parada o al apagar el micr&oacute;fono.</li>
+          <li>Los resultados se guardan autom&aacute;ticamente en <strong>Estad&iacute;sticas</strong>.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>6. Backing tracks</h3>
+        <ul>
+          <li>En el panel central, pulsa uno de los estilos &mdash;<strong>Rock, Funk, Blues, Jazz</strong>&mdash; y luego <strong>&#9654;</strong> para reproducir.</li>
+          <li>Los acordes de la pista se generan autom&aacute;ticamente a partir de la escala y ra&iacute;z seleccionadas.</li>
+          <li>Usa el <strong>control de BPM</strong> para ajustar la velocidad.</li>
+          <li>El volumen del backing se controla con el <strong>slider &laquo;Vol&raquo;</strong> junto al bot&oacute;n de play (independiente del volumen del sintetizador del header).</li>
+          <li>Puedes <strong>subir tu propia pista</strong> de audio con el bot&oacute;n <em>&laquo;+ Mi pista&raquo;</em>. Se reproduce en bucle.</li>
+          <li>Pulsa <strong>&#9654; de nuevo</strong> para detener la reproducci&oacute;n.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>7. Modo Improvisaci&oacute;n</h3>
+        <ul>
+          <li>Activa el toggle <strong>&laquo;Modo improvisaci&oacute;n&raquo;</strong> dentro del panel de backing.</li>
+          <li>Mientras suena el backing track, el modo eval&uacute;a en tiempo real las notas que tocas por el micr&oacute;fono.</li>
+          <li><strong>Reglas de puntuaci&oacute;n:</strong>
+            <ul>
+              <li><strong>Nota del acorde actual:</strong> +150 puntos (+50 extra si la afinaci&oacute;n es muy precisa).</li>
+              <li><strong>Nota de la escala (pero no del acorde):</strong> +80 puntos.</li>
+              <li><strong>Nota fuera de la escala:</strong> 0 puntos, la racha se rompe.</li>
+            </ul>
+          </li>
+          <li>El panel de improvisaci&oacute;n muestra:
+            <ul>
+              <li>El <strong>acorde actual</strong> que est&aacute; sonando en ese comp&aacute;s.</li>
+              <li>Tu <strong>puntuaci&oacute;n</strong> en vivo.</li>
+              <li>La <strong>racha</strong> de aciertos.</li>
+              <li>Un <strong>temporizador</strong> con el tiempo transcurrido.</li>
+            </ul>
+          </li>
+          <li>Al detener el backing, la sesi&oacute;n se guarda autom&aacute;ticamente en Estad&iacute;sticas como tipo &laquo;Improvisaci&oacute;n&raquo;.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>8. Estad&iacute;sticas</h3>
+        <ul>
+          <li>Accede desde el panel derecho. Usa los <strong>tabs</strong> para filtrar:
+            <ul>
+              <li><strong>Todo:</strong> entrenamiento + improvisaci&oacute;n.</li>
+              <li><strong>Entrenamiento:</strong> solo sesiones de &laquo;Toca la nota&raquo;.</li>
+              <li><strong>Improvisaci&oacute;n:</strong> solo sesiones de improvisaci&oacute;n.</li>
+            </ul>
+          </li>
+          <li>Filtra adem&aacute;s por <strong>escala/arpegio</strong> con el selector desplegable.</li>
+          <li>Ver&aacute;s m&eacute;tricas agregadas (puntuaci&oacute;n media, racha m&aacute;xima, tiempo total) y un <strong>gr&aacute;fico de barras</strong> con las &uacute;ltimas 10 sesiones.</li>
+          <li>El <strong>historial</strong> lista todas las sesiones guardadas. Para improvisaci&oacute;n muestra duraci&oacute;n; para entrenamiento muestra aciertos.</li>
+          <li>Usa el bot&oacute;n <strong>&laquo;Borrar datos&raquo;</strong> para eliminar todo el historial.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>9. Consejos y atajos</h3>
+        <ul>
+          <li>Pulsa <strong>Escape (Esc)</strong> para cerrar este modal.</li>
+          <li>Tambi&eacute;n puedes cerrarlo haciendo clic fuera del recuadro o en la <strong>&times;</strong>.</li>
+          <li>El <strong>AudioContext</strong> del navegador se activa con el primer gesto del usuario (clic, toque, etc.). Si no suena nada, haz primero clic en cualquier parte de la p&aacute;gina.</li>
+          <li>Para una mejor experiencia, usa <strong>auriculares</strong> y un micr&oacute;fono de calidad.</li>
+          <li>Se recomienda <strong>encarecidamente</strong> conectar el bajo a trav&eacute;s de una <strong>interfaz de audio</strong> para obtener la mejor detecci&oacute;n de notas y afinaci&oacute;n. Usar el micr&oacute;fono integrado del dispositivo puede dar resultados menos precisos.</li>
+          <li>Cambia entre tema oscuro y claro con el bot&oacute;n de <strong>&#9790; / &#9728;</strong> en el header.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
 
   <script type="module" src="./js/main.js"></script>
 </body>

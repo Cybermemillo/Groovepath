@@ -2,16 +2,25 @@ import { $ } from '../utils/dom.js';
 import { BACKING_STYLES } from './constants.js';
 
 const playBtn  = $('#backingPlay');
+const volSlider = $('#backingVolume');
 const bpmSlider = $('#bpmSlider');
 const bpmValue  = $('#bpmValue');
 const styleBtns = $('#backingStyles').querySelectorAll('.style-btn');
 const trackFile = $('#trackFile');
 
 export function render(state) {
+  volSlider.value = state.volume;
   bpmSlider.value = state.bpm;
   bpmValue.textContent = state.bpm;
   styleBtns.forEach(b => {
     b.classList.toggle('active', b.dataset.style === state.style);
+  });
+}
+
+export function onVolumeChange(fn) {
+  volSlider.addEventListener('input', (e) => {
+    const v = parseFloat(e.target.value);
+    if (typeof fn === 'function') fn(v);
   });
 }
 
