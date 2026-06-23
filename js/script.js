@@ -300,14 +300,13 @@ document.getElementById('themeToggle').addEventListener('click', () => {
 });
 
 /* ─────────────────────────────────────────────────────────
-   6. PITCH DETECTION — Web Audio API
-   Implementa el algoritmo ACF2+ (Autocorrelación) para
-   detectar la frecuencia fundamental desde el micrófono.
+   6. PITCH DETECTION — Web Audio API (Optimizada para Bajo)
 ───────────────────────────────────────────────────────── */
 
 let audioCtx       = null;
 let analyser       = null;
 let sourceNode     = null;
+let lowpassNode    = null;
 let mediaStream    = null;
 let rafId          = null;
 let buffer         = null;
@@ -319,10 +318,21 @@ async function startMic() {
 
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     analyser  = audioCtx.createAnalyser();
-    analyser.fftSize = 4096;
+    
+    // 1. Ampliamos la ventana a ~170ms para capturar bien las ondas graves
+    analyser.fftSize = 8192; 
+
+    // 2. Creamos un filtro Paso-Bajo para atenuar el trasteo y los brillos
+    lowpassNode = audioCtx.createBiquadFilter();
+    lowpassNode.type = 'lowpass';
+    lowpassNode.frequency.setValueAtTime(250, audioCtx.currentTime); 
+    lowpassNode.Q.setValueAtTime(0.5, audioCtx.currentTime); 
 
     sourceNode = audioCtx.createMediaStreamSource(mediaStream);
-    sourceNode.connect(analyser);
+    
+    // Cadena: Micrófono ──> Filtro ──> Analizador
+    sourceNode.connect(lowpassNode);
+    lowpassNode.connect(analyser);
 
     buffer = new Float32Array(analyser.fftSize);
 
@@ -339,6 +349,7 @@ async function startMic() {
 function stopMic() {
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
   if (sourceNode) { sourceNode.disconnect(); sourceNode = null; }
+  if (lowpassNode) { lowpassNode.disconnect(); lowpassNode = null; }
   if (audioCtx) { audioCtx.close(); audioCtx = null; }
   if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
 
@@ -370,21 +381,15 @@ document.getElementById('micToggle').addEventListener('click', () => {
   state.micActive ? stopMic() : startMic();
 });
 
-/* ─── Algoritmo ACF2+ de autocorrelación ─── */
+/* ─── Algoritmo ACF2+ Modificado para Frecuencias Graves ─── */
 
-/**
- * Analiza el buffer de audio y devuelve la frecuencia dominante (Hz).
- * Devuelve -1 si no se detecta señal clara.
- */
 function detectFrequency(buf, sampleRate) {
-  // Umbral de claridad de señal
   const SIZE  = buf.length;
   let rms = 0;
   for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.012) return -1;  // silencio
+  if (rms < 0.012) return -1; // Silencio
 
-  // Autocorrelación
   const corr = new Float32Array(SIZE);
   for (let i = 0; i < SIZE; i++) {
     for (let j = 0; j < SIZE - i; j++) {
@@ -392,22 +397,41 @@ function detectFrequency(buf, sampleRate) {
     }
   }
 
-  // Busca el primer mínimo (cruce negativo)
   let d = 0;
   while (d < SIZE && corr[d] > corr[d + 1]) d++;
 
-  // Busca el máximo después del mínimo
   let maxVal = -1, maxPos = -1;
   for (let i = d; i < SIZE; i++) {
     if (corr[i] > maxVal) { maxVal = corr[i]; maxPos = i; }
   }
 
-  // Claridad mínima
   if (corr[0] === 0) return -1;
-  const clarity = maxVal / corr[0];
-  if (clarity < 0.9) return -1;
 
-  // Interpolación parabólica para mayor precisión
+  // CORRECCIÓN A: Bajamos la exigencia de claridad de 0.90 a 0.45
+  const clarity = maxVal / corr[0];
+  if (clarity < 0.45) return -1;
+
+  // CORRECCIÓN B: Verificación de Sub-Armónico (Anti-Octave Lock)
+  // Miramos si existe un pico decente exactamente al doble de distancia (mitad de frecuencia)
+  const subPeriod = Math.floor(maxPos * 2);
+  if (subPeriod < SIZE) {
+    const window = Math.floor(maxPos * 0.1); // Margen de búsqueda de ±10%
+    let subMaxVal = -1, subMaxPos = -1;
+    
+    const startIdx = Math.max(d, subPeriod - window);
+    const endIdx   = Math.min(SIZE - 1, subPeriod + window);
+
+    for (let i = startIdx; i <= endIdx; i++) {
+      if (corr[i] > subMaxVal) { subMaxVal = corr[i]; subMaxPos = i; }
+    }
+
+    // Si el pico lejano tiene al menos un 55% de la fuerza del armónico, ES la fundamental
+    if (subMaxVal > (maxVal * 0.55)) {
+      maxPos = subMaxPos;
+    }
+  }
+
+  // Interpolación parabólica
   let T0 = maxPos;
   if (T0 > 0 && T0 < SIZE - 1) {
     const x1 = corr[T0 - 1], x2 = corr[T0], x3 = corr[T0 + 1];
@@ -417,10 +441,6 @@ function detectFrequency(buf, sampleRate) {
   return sampleRate / T0;
 }
 
-/**
- * Convierte una frecuencia en Hz a la nota MIDI más cercana
- * y los centésimas de desafinación.
- */
 function freqToMidi(freq) {
   const midi  = 69 + 12 * Math.log2(freq / 440);
   const rounded = Math.round(midi);
@@ -428,7 +448,6 @@ function freqToMidi(freq) {
   return { midi: rounded, cents };
 }
 
-/** Bucle de análisis en tiempo real (requestAnimationFrame) */
 function detectPitch() {
   rafId = requestAnimationFrame(detectPitch);
 
