@@ -149,7 +149,52 @@ body {
   color: var(--accent);
 }
 
-.header-controls { display: flex; align-items: center; gap: 0.5rem; }
+.header-controls { display: flex; align-items: center; gap: 0.75rem; }
+
+.volume-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+#volumeSlider {
+  appearance: none;
+  width: 80px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+#volumeSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: box-shadow var(--transition);
+}
+#volumeSlider::-webkit-slider-thumb:hover {
+  box-shadow: var(--shadow-glow-accent);
+}
+#volumeSlider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+#volumeSlider::-moz-range-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+}
 
 .btn-icon {
   width: 38px;
@@ -283,6 +328,8 @@ body {
 }
 .toggle-switch input:checked + .toggle-knob { background: var(--accent); border-color: var(--accent); }
 .toggle-switch input:checked + .toggle-knob::before { transform: translateX(16px); background: #fff; }
+.toggle-switch input:disabled + .toggle-knob { opacity: 0.35; cursor: not-allowed; }
+.toggle-switch input:disabled + .toggle-knob::before { background: var(--border); }
 
 /* ===== FRET RANGE CONTROLS ===== */
 .range-row {
@@ -514,6 +561,14 @@ body {
 @keyframes detected-pulse {
   0%, 100% { box-shadow: 0 0 14px var(--detected-glow), 0 0 28px var(--detected-glow); }
   50%       { box-shadow: 0 0 22px var(--detected-glow), 0 0 44px var(--detected-glow); }
+}
+
+.note-dot.playing {
+  animation: note-tap 0.2s ease-out;
+}
+@keyframes note-tap {
+  0%   { filter: brightness(1.8); }
+  100% { filter: brightness(1); }
 }
 
 /* Arpeggio dot — diamond shape */

@@ -5,6 +5,7 @@ import {
 } from './constants.js';
 import { midiToNote, getScaleNotes, getArpeggioNotes } from './theory.js';
 import { showTooltip, hideTooltip } from './tooltip.js';
+import * as synth from './synth.js';
 import { $ } from '../utils/dom.js';
 
 let dotsCache = [];
@@ -72,6 +73,17 @@ export function buildFretboard(state) {
 
       cell.addEventListener('mouseenter', (e) => showTooltip(e, noteName, octave));
       cell.addEventListener('mouseleave', hideTooltip);
+
+      if (f > 0) {
+        cell.addEventListener('click', () => {
+          synth.playNote(midi);
+          const dot = cell.querySelector('.note-dot');
+          if (dot) {
+            dot.classList.add('playing');
+            setTimeout(() => dot.classList.remove('playing'), 220);
+          }
+        });
+      }
 
       board.appendChild(cell);
     }

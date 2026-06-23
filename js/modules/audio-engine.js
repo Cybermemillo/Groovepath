@@ -6,3 +6,10 @@ export function getAudioContext() {
   }
   return audioCtx;
 }
+
+export function resumeAudioContext() {
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+}

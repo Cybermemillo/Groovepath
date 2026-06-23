@@ -3,6 +3,7 @@ import { $ } from '../utils/dom.js';
 import * as fretboard from './fretboard.js';
 import * as tunerEngine from './tuner-engine.js';
 import * as tunerUi from './tuner-ui.js';
+import * as synth from './synth.js';
 import { initTooltip } from './tooltip.js';
 
 /* ─── State ─── */
@@ -16,6 +17,7 @@ const state = {
   fretTo:         24,
   arpeggioType:   'none',
   soloArpeggio:   false,
+  volume:         0.5,
   darkMode:      true,
   micActive:     false,
   detectedNote:   null,
@@ -169,6 +171,15 @@ export function init() {
 
   setTheme(true);
 
+  $('#soloArpeggio').disabled = true;
+
+  synth.setVolume(state.volume);
+
+  $('#volumeSlider').addEventListener('input', (e) => {
+    state.volume = parseFloat(e.target.value);
+    synth.setVolume(state.volume);
+  });
+
   $('#scaleSelect').addEventListener('change', (e) => {
     state.scaleType = e.target.value;
     fretboard.renderScale(state);
@@ -191,6 +202,12 @@ export function init() {
 
   $('#arpeggioSelect').addEventListener('change', (e) => {
     state.arpeggioType = e.target.value;
+    const isNone = state.arpeggioType === 'none';
+    $('#soloArpeggio').disabled = isNone;
+    if (isNone) {
+      $('#soloArpeggio').checked = false;
+      state.soloArpeggio = false;
+    }
     fretboard.renderScale(state);
   });
 
