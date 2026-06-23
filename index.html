@@ -202,6 +202,70 @@
 
     </section>
 
+    <!-- ===== BACKING TRACK ===== -->
+    <section class="backing-panel" aria-label="Backing track" id="backingPanel">
+      <div class="backing-header">
+        <h3 class="backing-title">Backing track</h3>
+        <label class="track-file-wrap" title="Subir archivo de audio">
+          <input type="file" id="trackFile" accept="audio/*" />
+          <span class="track-file-btn">+ Subir pista</span>
+        </label>
+      </div>
+      <div class="backing-controls">
+        <button id="backingPlay" class="btn-backing-play">▶</button>
+        <div class="bpm-wrap">
+          <label class="bpm-label">BPM</label>
+          <input type="range" id="bpmSlider" min="60" max="180" value="100" step="1" />
+          <span class="bpm-value" id="bpmValue">100</span>
+        </div>
+      </div>
+      <div class="backing-styles" id="backingStyles">
+        <button class="style-btn active" data-style="rock">Rock</button>
+        <button class="style-btn" data-style="funk">Funk</button>
+        <button class="style-btn" data-style="blues">Blues</button>
+        <button class="style-btn" data-style="jazz">Jazz</button>
+        <button class="style-btn" data-style="upload">+ Mi pista</button>
+      </div>
+      <div class="backing-info">
+        <span class="backing-scale" id="backingScale"></span>
+      </div>
+      <div class="impro-toggle">
+        <label class="toggle-label" for="improToggle">
+          <span>Modo improvisación</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="improToggle" />
+            <span class="toggle-knob"></span>
+          </div>
+        </label>
+      </div>
+      <div class="impro-panel" id="improPanel">
+        <div class="impro-bar">
+          <span class="impro-chord-label">Acorde</span>
+          <span class="impro-chord" id="improChord">—</span>
+        </div>
+        <div class="impro-bar">
+          <div class="impro-stat">
+            <span class="impro-stat-label">Puntos</span>
+            <span class="impro-stat-val" id="improScore">0</span>
+          </div>
+          <div class="impro-stat">
+            <span class="impro-stat-label">Racha</span>
+            <span class="impro-stat-val" id="improStreak">0</span>
+          </div>
+          <div class="impro-stat">
+            <span class="impro-stat-label">Tiempo</span>
+            <span class="impro-stat-val" id="improTime">0:00</span>
+          </div>
+        </div>
+        <div class="impro-feedback" id="improFeedback">
+          <span id="improFeedbackText"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TRAINING + STATS LAYOUT ===== -->
+    <div class="training-layout">
+
     <!-- ===== TRAINING PANEL ===== -->
     <section class="training-panel" aria-label="Entrenamiento" id="trainingPanel">
       <div class="training-countdown" id="trainingCountdown"></div>
@@ -227,6 +291,27 @@
       </div>
       <div class="training-results" id="trainingResults"></div>
     </section>
+
+    <!-- ===== STATS PANEL ===== -->
+    <section class="stats-panel" aria-label="Estadísticas" id="statsPanel">
+      <div class="stats-header">
+        <h3 class="stats-title">Estadísticas</h3>
+        <select id="statsFilter" class="styled-select stats-filter">
+          <option value="">Global</option>
+        </select>
+      </div>
+      <div class="stats-type-tabs" id="statsTypeTabs">
+        <button class="stats-tab active" data-type="all">Todo</button>
+        <button class="stats-tab" data-type="training">Entrenamiento</button>
+        <button class="stats-tab" data-type="improvisation">Improvisación</button>
+      </div>
+      <div class="stats-global" id="statsGlobal"></div>
+      <div class="stats-chart" id="statsChart"></div>
+      <div class="stats-history" id="statsHistory"></div>
+      <button id="statsClear" class="btn-stats-clear">Borrar estadísticas</button>
+    </section>
+
+    </div>
 
     <!-- ===== LEGEND ===== -->
     <section class="legend" aria-label="Leyenda">

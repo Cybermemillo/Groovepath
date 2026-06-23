@@ -24,6 +24,12 @@ export function getArpeggioNotes(root, type) {
   return { notes, degrees: degreeMap };
 }
 
+export function getChordRoot(root, scaleType, degree) {
+  const notes = getScaleNotes(root, scaleType);
+  if (notes.length === 0) return root;
+  return notes[degree % notes.length];
+}
+
 export function midiToFreq(midi) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }

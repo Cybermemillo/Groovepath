@@ -6,6 +6,12 @@ import * as tunerUi from './tuner-ui.js';
 import * as synth from './synth.js';
 import * as training from './training.js';
 import * as trainingUi from './training-ui.js';
+import * as stats from './stats.js';
+import * as statsUi from './stats-ui.js';
+import * as backing from './backing-track.js';
+import * as backingUi from './backing-track-ui.js';
+import * as improvisation from './improvisation.js';
+import * as improUi from './improvisation-ui.js';
 import { initTooltip } from './tooltip.js';
 
 /* ─── State ─── */
@@ -27,6 +33,9 @@ const state = {
   detectedCents:  0,
   detectedFreq:   0,
   trainingActive:  false,
+  backingActive:   false,
+  audioMode:       'generated',
+  improvisationActive: false,
 };
 
 /* ─── Tuner callbacks ─── */
@@ -40,7 +49,11 @@ tunerEngine.setCallbacks({
 
     if (state.trainingActive) {
       training.evaluatePitch(note, cents);
-    } else if (changed) {
+    }
+    if (state.improvisationActive) {
+      improvisation.evaluatePitch(note, cents);
+    }
+    if (!state.trainingActive && !state.improvisationActive && changed) {
       fretboard.renderScale(state);
     }
   },
@@ -83,6 +96,7 @@ function buildRootNoteGrid() {
       grid.querySelectorAll('.note-btn').forEach(b =>
         b.classList.toggle('active', b.dataset.note === note)
       );
+      backing.setRootScale(state.rootNote, state.scaleType);
       fretboard.renderScale(state);
     });
     grid.appendChild(btn);
@@ -173,6 +187,8 @@ function updateRange() {
 }
 
 /* ─── Training ─── */
+let audioEl = null; // uploaded file reference
+
 function setupTrainingCallbacks() {
   training.setCallbacks({
     onCountdown(n) {
@@ -191,6 +207,19 @@ function setupTrainingCallbacks() {
       synth.playFeedback(false);
     },
     onFinish(results) {
+      stats.recordSession({
+        root: state.rootNote,
+        scale: state.scaleType,
+        arpeggio: state.arpeggioType,
+        range: state.fretFrom + '-' + state.fretTo,
+        score: results.score,
+        correct: results.correct,
+        wrong: results.wrong,
+        maxStreak: results.maxStreak,
+        total: results.total,
+      });
+      statsUi.render();
+      populateStatsFilter();
       trainingUi.renderResults(results);
       fretboard.clearTarget();
       state.trainingActive = false;
@@ -233,6 +262,25 @@ function stopTraining() {
   state.trainingActive = false;
 }
 
+function populateStatsFilter() {
+  const sel = $('#statsFilter');
+  const val = sel.value;
+  sel.innerHTML = '<option value="">Global</option>';
+  stats.getFilters().forEach(f => {
+    const label = f.arpeggio !== 'none'
+      ? f.root + ' arp ' + f.arpeggio.replace(/_/g, ' ')
+      : f.root + ' ' + f.scale.replace(/_/g, ' ');
+    const key = f.arpeggio !== 'none'
+      ? 'arp:' + f.root + '|' + f.arpeggio
+      : f.root + '|' + f.scale;
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = label;
+    if (key === val) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
 /* ─── Init ─── */
 export function init() {
   buildRootNoteGrid();
@@ -243,6 +291,34 @@ export function init() {
   setTheme(true);
 
   setupTrainingCallbacks();
+
+  improvisation.setCallbacks({
+    onCorrect({ note, points, streak, score, type }) {
+      improUi.updateScore(score, streak);
+      improUi.showFeedback(note, points, type);
+    },
+    onWrong({ note, score, streak }) {
+      improUi.updateScore(score, streak);
+      improUi.showWrong(note);
+    },
+    onChordChange({ chord }) {
+      improUi.updateChord(chord);
+    },
+  });
+
+  backing.setCallbacks({
+    onBarStart({ chord }) {
+      improvisation.setChord(chord);
+    },
+  });
+
+  statsUi.init();
+
+  statsUi.render();
+  populateStatsFilter();
+
+  backing.setRootScale(state.rootNote, state.scaleType);
+  backingUi.render(backing.getState());
 
   $('#soloArpeggio').disabled = true;
 
@@ -255,6 +331,7 @@ export function init() {
 
   $('#scaleSelect').addEventListener('change', (e) => {
     state.scaleType = e.target.value;
+    backing.setRootScale(state.rootNote, state.scaleType);
     fretboard.renderScale(state);
   });
 
@@ -313,12 +390,171 @@ export function init() {
         stopTraining();
         return;
       }
+      if (state.improvisationActive) {
+        const results = improvisation.stop();
+        if (results) {
+          stats.recordImprovisation(results);
+          statsUi.render();
+          populateStatsFilter();
+        }
+        improUi.renderIdle();
+      }
       fretboard.renderScale(state);
     } else {
       const ok = await tunerEngine.startMic();
       setMicUI(ok);
       if (!ok) {
         micStatusText.textContent = 'Sin acceso al micrófono';
+      }
+    }
+  });
+
+  $('#statsFilter').addEventListener('change', () => {
+    const val = $('#statsFilter').value;
+    if (val === '') {
+      statsUi.render();
+    } else {
+      const parts = val.split(':');
+      if (parts[0] === 'arp') {
+        const [root, arp] = parts[1].split('|');
+        statsUi.render({ root, scale: '', arpeggio: arp });
+      } else {
+        const [root, scale] = parts[0].split('|');
+        statsUi.render({ root, scale, arpeggio: 'none' });
+      }
+    }
+  });
+
+  $('#statsClear').addEventListener('click', () => {
+    if (confirm('¿Borrar todas las estadísticas?')) {
+      stats.clearStats();
+      statsUi.render();
+      populateStatsFilter();
+    }
+  });
+
+  backingUi.onPlayClick(() => {
+    if (audioEl && state.audioMode === 'file') {
+      if (audioEl.paused) {
+        audioEl.play().catch(() => {});
+        state.backingActive = true;
+        backingUi.setPlayIcon(true);
+      } else {
+        audioEl.pause();
+        state.backingActive = false;
+        backingUi.setPlayIcon(false);
+      }
+      return;
+    }
+    if (backing.isPlaying()) {
+      backing.stop();
+      state.backingActive = false;
+      backingUi.setPlayIcon(false);
+      if (state.improvisationActive) {
+        const results = improvisation.stop();
+        if (results) {
+          stats.recordImprovisation(results);
+          statsUi.render();
+          populateStatsFilter();
+        }
+        improUi.renderIdle();
+      }
+    } else {
+      backing.stop();
+      if (audioEl) { audioEl.pause(); audioEl = null; }
+      state.audioMode = 'generated';
+      state.backingActive = true;
+      backing.setRootScale(state.rootNote, state.scaleType);
+      backing.start();
+      backingUi.setPlayIcon(true);
+      if (state.improvisationActive) {
+        improvisation.start(state.rootNote, state.scaleType);
+        improUi.renderActive('—');
+      }
+    }
+  });
+
+  backingUi.onBpmChange((bpm) => {
+    backing.setBpm(bpm);
+  });
+
+  backingUi.bindStyleButtons((style) => {
+    if (style === 'upload') {
+      if (improvisation.isActive()) { improvisation.stop(); improUi.renderIdle(); }
+      if (audioEl) {
+        backing.stop();
+        state.audioMode = 'file';
+        state.backingActive = true;
+        audioEl.play().catch(() => {});
+        backingUi.setPlayIcon(true);
+      } else {
+        $('#trackFile').click();
+      }
+      return;
+    }
+    if (improvisation.isActive()) { improvisation.stop(); improUi.renderIdle(); }
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+    state.audioMode = 'generated';
+    backing.stop();
+    backing.setStyle(style);
+    backingUi.render(backing.getState());
+    if (state.backingActive) {
+      backing.setRootScale(state.rootNote, state.scaleType);
+      backing.start();
+    }
+    backingUi.setPlayIcon(state.backingActive);
+  });
+
+  backingUi.onFileChange((files) => {
+    if (!files || !files[0]) return;
+    backing.stop();
+    if (improvisation.isActive()) { improvisation.stop(); improUi.renderIdle(); }
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+    state.backingActive = false;
+    backingUi.setPlayIcon(false);
+
+    const file = files[0];
+    const btn = $('#trackFile').parentElement.querySelector('.track-file-btn');
+    if (btn) { btn.textContent = file.name.length > 18 ? file.name.slice(0, 15) + '...' : file.name; }
+    $('#trackFile').parentElement.classList.add('has-file');
+
+    const url = URL.createObjectURL(file);
+    audioEl = new Audio(url);
+    audioEl.loop = true;
+    state.audioMode = 'file';
+
+    $('#backingStyles').querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+    const uploadBtn = $('#backingStyles').querySelector('[data-style="upload"]');
+    if (uploadBtn) uploadBtn.classList.add('active');
+
+    audioEl.addEventListener('ended', () => {
+      state.backingActive = false;
+      state.audioMode = 'generated';
+      backingUi.setPlayIcon(false);
+      audioEl = null;
+      $('#trackFile').parentElement.classList.remove('has-file');
+      if (btn) { btn.textContent = '+ Subir pista'; }
+    });
+  });
+
+  $('#improToggle').addEventListener('change', (e) => {
+    state.improvisationActive = e.target.checked;
+    if (state.improvisationActive) {
+      if (backing.isPlaying()) {
+        improvisation.start(state.rootNote, state.scaleType);
+        improUi.renderActive('—');
+      } else {
+        improUi.renderIdle();
+      }
+    } else {
+      if (improvisation.isActive()) {
+        const results = improvisation.stop();
+        if (results) {
+          stats.recordImprovisation(results);
+          statsUi.render();
+          populateStatsFilter();
+        }
+        improUi.renderIdle();
       }
     }
   });
