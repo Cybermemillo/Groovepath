@@ -300,6 +300,30 @@ body {
 .styled-select:focus { outline: none; border-color: var(--accent); }
 .styled-select option { background: var(--bg-raised); color: var(--text-primary); }
 
+.custom-tuning-notes {
+  display: flex;
+  gap: 4px;
+  margin-top: 5px;
+}
+.custom-note-input {
+  width: 42px;
+  padding: 3px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+.custom-note-input:focus {
+  outline: none;
+  border-color: var(--scale-note);
+  box-shadow: 0 0 6px var(--scale-glow);
+}
+
 /* Toggle */
 .toggle-group { justify-content: center; }
 .toggle-label {
@@ -742,6 +766,19 @@ body {
   font-size: 0.85rem;
   color: var(--text-muted);
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.string-info {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--scale-note);
+  background: rgba(78, 201, 176, 0.08);
+  border: 1px solid rgba(78, 201, 176, 0.18);
+  border-radius: 999px;
+  padding: 1px 10px;
 }
 
 /* Mic button */
@@ -795,9 +832,32 @@ body {
   transition: background var(--transition), box-shadow var(--transition);
 }
 .mic-dot.active {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow);
-  animation: dot-blink 1.2s ease-in-out infinite;
+  background: var(--scale-note);
+  box-shadow: 0 0 8px var(--scale-glow);
+  animation: micPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 4px var(--scale-glow); }
+  50%      { box-shadow: 0 0 14px var(--scale-glow); }
+}
+
+.mic-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(232, 69, 96, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(232, 69, 96, 0.06);
+  font-size: 0.72rem;
+  color: var(--accent);
+  line-height: 1.4;
+}
+.mic-error-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 @keyframes dot-blink {
   0%, 100% { opacity: 1; }
@@ -1504,9 +1564,19 @@ body {
   .tuner-actions { flex-direction: row; align-items: center; gap: 1rem; }
   .btn-mic { flex-direction: row; padding: 10px 16px; }
 
-  .fretboard-section { padding: 1rem 0.5rem 0.5rem; }
+  .fretboard-section { padding: 1rem 0.25rem 0.5rem; }
 
-  .note-dot { width: 26px; height: 26px; font-size: 0.62rem; }
+  .fretboard { min-width: 780px; grid-template-columns: 28px repeat(24, 1fr); grid-template-rows: repeat(4, 42px); }
+  .note-dot { width: 22px; height: 22px; font-size: 0.55rem; }
+
+  .fretboard-scroll {
+    background:
+      linear-gradient(to right, var(--bg-surface) 0%, transparent 20px) left,
+      linear-gradient(to left, var(--bg-surface) 0%, transparent 20px) right;
+    background-repeat: no-repeat;
+    background-size: 40px 100%;
+    background-attachment: local, local;
+  }
 }
 
 /* ===== HELP MODAL ===== */
@@ -1605,6 +1675,235 @@ body {
 @media (max-width: 520px) {
   .help-modal { width: 96vw; padding: 1.25rem 1rem; }
   .help-modal h2 { font-size: 1.25rem; }
+}
+
+/* ===== METRONOME WIDGET ===== */
+.metronome-widget {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.metro-toggle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  transition: all var(--transition);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  padding: 0;
+  font-family: inherit;
+}
+.metro-toggle:hover {
+  border-color: var(--scale-note);
+  color: var(--scale-note);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 12px var(--scale-glow);
+}
+.metro-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+.metro-mini-bpm {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+.metro-mini-status {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  line-height: 1;
+  display: none;
+}
+.metro-mini-status.active {
+  display: block;
+  color: var(--scale-note);
+  animation: micPulse 1.4s ease-in-out infinite;
+}
+.metronome-widget.expanded .metro-mini-status { display: none; }
+
+.metro-panel {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  min-width: 220px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  margin-bottom: 0.5rem;
+}
+.metronome-widget.expanded .metro-panel { display: flex; }
+
+.metro-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metro-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--scale-note);
+  background: rgba(78, 201, 176, 0.1);
+  color: var(--scale-note);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.metro-play:hover { background: rgba(78, 201, 176, 0.2); }
+.metro-play.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.metro-bpm-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+#metroBpmSlider {
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  cursor: pointer;
+  min-width: 60px;
+}
+#metroBpmSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--scale-note);
+  cursor: pointer;
+}
+.metro-bpm-display {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  min-width: 30px;
+  text-align: right;
+}
+.metro-bpm-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.metro-tap {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 0.68rem;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.metro-tap:hover { border-color: var(--scale-note); color: var(--scale-note); }
+.metro-tap:active { background: var(--scale-note); color: #0D1A18; border-color: var(--scale-note); }
+
+.metro-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.metro-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  width: 36px;
+  flex-shrink: 0;
+}
+
+#metroVolume {
+  appearance: none;
+  width: 80px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  cursor: pointer;
+}
+#metroVolume::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--scale-note);
+  cursor: pointer;
+}
+
+.metro-btn-group {
+  display: flex;
+  gap: 3px;
+}
+.metro-sub-btn,
+.metro-ts-btn {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.6rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  line-height: 1.4;
+}
+.metro-sub-btn:hover,
+.metro-ts-btn:hover { border-color: var(--scale-note); color: var(--scale-note); }
+.metro-sub-btn.active,
+.metro-ts-btn.active { background: var(--scale-note); border-color: var(--scale-note); color: #0D1A18; }
+
+.metro-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.metro-check input { accent-color: var(--scale-note); }
+
+@media (max-width: 520px) {
+  .metronome-widget { bottom: 0.5rem; right: 0.5rem; }
+  .metro-panel { min-width: 200px; padding: 0.6rem 0.75rem; }
 }
 
 /* ===== SCROLLBAR GLOBAL ===== */

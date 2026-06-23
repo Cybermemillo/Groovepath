@@ -16,7 +16,7 @@ export function setCallbacks(cbs) {
 
 function getPool(state) {
   const pool = [];
-  const tuningMidi = TUNINGS[state.tuning];
+  const tuningMidi = state.customTuningMidi || TUNINGS[state.tuning];
 
   const arp = state.arpeggioType !== 'none'
     ? getArpeggioNotes(state.rootNote, state.arpeggioType)

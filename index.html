@@ -103,10 +103,19 @@
       <div class="control-group">
         <label class="control-label">Afinación</label>
         <select id="tuningSelect" class="styled-select">
-          <option value="standard">Estándar (EADG)</option>
-          <option value="drop_d">Drop D (DADG)</option>
-          <option value="d_standard">D Estándar (DADG-1step)</option>
+          <option value="standard">Standard (E-A-D-G)</option>
+          <option value="drop_d">Drop D (D-A-D-G)</option>
+          <option value="d_standard">D Standard (D-G-C-F)</option>
+          <option value="eb_standard">Eb Standard</option>
+          <option value="half_step_down">Medio tono bajo</option>
+          <option value="custom">Personalizada</option>
         </select>
+        <div class="custom-tuning-notes" id="customTuningNotes" style="display:none">
+          <input type="text" class="custom-note-input" id="ctNote3" maxlength="3" placeholder="E" />
+          <input type="text" class="custom-note-input" id="ctNote2" maxlength="3" placeholder="A" />
+          <input type="text" class="custom-note-input" id="ctNote1" maxlength="3" placeholder="D" />
+          <input type="text" class="custom-note-input" id="ctNote0" maxlength="3" placeholder="G" />
+        </div>
       </div>
 
       <div class="control-group">
@@ -182,7 +191,13 @@
 
         <div class="tuner-freq">
           <span id="tunerFreq">— Hz</span>
+          <span class="string-info" id="stringInfo"></span>
         </div>
+      </div>
+
+      <div class="mic-error-banner" id="micErrorBanner" style="display:none">
+        <span class="mic-error-icon">⚠</span>
+        <span class="mic-error-text" id="micErrorText"></span>
       </div>
 
       <div class="tuner-actions">
@@ -216,7 +231,7 @@
         <button id="backingPlay" class="btn-backing-play">▶</button>
         <div class="backing-vol-wrap">
           <label class="bpm-label">Vol</label>
-          <input type="range" id="backingVolume" min="0" max="1.2" step="0.01" value="1" />
+          <input type="range" id="backingVolume" min="0" max="1" step="0.01" value="0.8" />
         </div>
         <div class="bpm-wrap">
           <label class="bpm-label">BPM</label>
@@ -379,6 +394,16 @@
       </section>
 
       <section class="help-section">
+        <h3>2b. Afinaci&oacute;n</h3>
+        <ul>
+          <li>Usa el selector <strong>&laquo;Afinaci&oacute;n&raquo;</strong> para cambiar entre Standard, Drop D, D Standard, Eb Standard, medio tono bajo o una afinaci&oacute;n <strong>personalizada</strong>.</li>
+          <li>Al elegir <em>&laquo;Personalizada&raquo;</em> aparecen 4 campos para introducir las notas de cada cuerda (de grave a agudo).</li>
+          <li>El diapas&oacute;n y el afinador se adaptan autom&aacute;ticamente a la afinaci&oacute;n seleccionada.</li>
+          <li>El afinador muestra ahora en qu&eacute; <strong>cuerda y traste</strong> est&aacute; la nota detectada.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
         <h3>3. Sonido</h3>
         <ul>
           <li>Haz <strong>clic en cualquier punto</strong> del diapas&oacute;n para escuchar esa nota.</li>
@@ -389,13 +414,24 @@
       </section>
 
       <section class="help-section">
+        <h3>3b. Metr&oacute;nomo</h3>
+        <ul>
+          <li>El metr&oacute;nomo est&aacute; siempre visible en forma de <strong>bot&oacute;n flotante</strong> en la esquina inferior derecha.</li>
+          <li>Pulsa el bot&oacute;n para expandir el panel con todos los controles.</li>
+          <li>Puedes ajustar BPM, <strong>subdivisiones</strong> (negras, corcheas, semicorcheas, tresillos), <strong>comp&aacute;s</strong> (4/4, 3/4, 6/8, 5/4) y <strong>acento</strong> en el tiempo 1.</li>
+          <li>Usa el bot&oacute;n <strong>&laquo;Tap&raquo;</strong> pulsandolo al ritmo para que el metr&oacute;nomo calcule los BPM autom&aacute;ticamente.</li>
+          <li>El metr&oacute;nomo funciona independientemente y puede sonar a la vez que el backing track.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
         <h3>4. Afinador</h3>
         <ul>
           <li>Activa el <strong>micr&oacute;fono</strong> con el bot&oacute;n del panel del afinador.</li>
           <li>Toca una nota en tu bajo real. El afinador te muestra:
             <ul>
               <li>La nota detectada m&aacute;s cercana.</li>
-              <li>Los <strong>c&eacute;ntimos</strong> de desviaci&oacute;n (positivo = agudo, negativo = grave).</li>
+              <li>La <strong>cuerda y traste</strong> donde se encuentra esa nota, seg&uacute;n la afinaci&oacute;n activa.</li>
               <li>Una barra visual que te indica qu&eacute; tan afinado est&aacute;s.</li>
             </ul>
           </li>
@@ -485,6 +521,54 @@
           <li>Cambia entre tema oscuro y claro con el bot&oacute;n de <strong>&#9790; / &#9728;</strong> en el header.</li>
         </ul>
       </section>
+    </div>
+  </div>
+
+  <!-- ===== METRONOME WIDGET ===== -->
+  <div class="metronome-widget" id="metronomeWidget">
+    <button class="metro-toggle" id="metroToggle" title="Metrónomo" aria-label="Metrónomo">
+      <span class="metro-icon">&#9833;</span>
+      <span class="metro-mini-bpm" id="metroMiniBpm">100</span>
+      <span class="metro-mini-status" id="metroMiniStatus"></span>
+    </button>
+    <div class="metro-panel" id="metroPanel">
+      <div class="metro-controls">
+        <button id="metroPlay" class="metro-play">&#9654;</button>
+        <div class="metro-bpm-control">
+          <input type="range" id="metroBpmSlider" min="40" max="240" value="100" step="1" />
+          <span class="metro-bpm-display" id="metroBpmDisplay">100</span>
+          <span class="metro-bpm-label">BPM</span>
+        </div>
+        <button id="metroTap" class="metro-tap">Tap</button>
+      </div>
+      <div class="metro-row">
+        <span class="metro-label">Vol</span>
+        <input type="range" id="metroVolume" min="0" max="1" step="0.01" value="0.7" />
+      </div>
+      <div class="metro-row">
+        <span class="metro-label">Subdiv</span>
+        <div class="metro-btn-group">
+          <button class="metro-sub-btn active" data-sub="quarter">1/4</button>
+          <button class="metro-sub-btn" data-sub="eighth">1/8</button>
+          <button class="metro-sub-btn" data-sub="sixteenth">1/16</button>
+          <button class="metro-sub-btn" data-sub="triplet">3illo</button>
+        </div>
+      </div>
+      <div class="metro-row">
+        <span class="metro-label">Compás</span>
+        <div class="metro-btn-group">
+          <button class="metro-ts-btn active" data-ts="4/4">4/4</button>
+          <button class="metro-ts-btn" data-ts="3/4">3/4</button>
+          <button class="metro-ts-btn" data-ts="6/8">6/8</button>
+          <button class="metro-ts-btn" data-ts="5/4">5/4</button>
+        </div>
+      </div>
+      <div class="metro-row">
+        <label class="metro-check">
+          <input type="checkbox" id="metroAccent" checked />
+          <span>Acentuar 1</span>
+        </label>
+      </div>
     </div>
   </div>
 

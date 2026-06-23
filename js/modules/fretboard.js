@@ -17,8 +17,12 @@ export function buildFretboard(state) {
   board.innerHTML = '';
   nums.innerHTML  = '';
 
-  const tuningMidi   = TUNINGS[state.tuning];
-  const tuningLabels = TUNING_LABELS[state.tuning];
+  const tuningMidi = state.customTuningMidi
+    ? state.customTuningMidi
+    : TUNINGS[state.tuning];
+  const tuningLabels = state.customTuningLabels
+    ? state.customTuningLabels
+    : TUNING_LABELS[state.tuning];
 
   for (let s = 0; s < NUM_STRINGS; s++) {
     for (let f = 0; f <= NUM_FRETS; f++) {

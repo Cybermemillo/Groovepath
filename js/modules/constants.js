@@ -18,16 +18,31 @@ export const SCALES = {
 };
 
 export const TUNINGS = {
-  standard:   [43, 38, 33, 28],
-  drop_d:     [43, 38, 33, 26],
-  d_standard: [41, 36, 31, 26],
+  standard:       [43, 38, 33, 28],
+  drop_d:         [43, 38, 33, 26],
+  d_standard:     [41, 36, 31, 26],
+  eb_standard:    [42, 37, 32, 27],
+  half_step_down: [42, 37, 32, 27],
+  custom:         [43, 38, 33, 28],
 };
 
 export const TUNING_LABELS = {
-  standard:   ['G', 'D', 'A', 'E'],
-  drop_d:     ['G', 'D', 'A', 'D'],
-  d_standard: ['F', 'C', 'G', 'D'],
+  standard:       ['G', 'D', 'A', 'E'],
+  drop_d:         ['G', 'D', 'A', 'D'],
+  d_standard:     ['F', 'C', 'G', 'D'],
+  eb_standard:    ['Gb', 'Db', 'Ab', 'Eb'],
+  half_step_down: ['F#', 'C#', 'G#', 'D#'],
+  custom:         ['G', 'D', 'A', 'E'],
 };
+
+export const TUNING_OPTIONS = [
+  { value: 'standard',       label: 'Standard (E-A-D-G)' },
+  { value: 'drop_d',         label: 'Drop D (D-A-D-G)' },
+  { value: 'd_standard',     label: 'D Standard (D-G-C-F)' },
+  { value: 'eb_standard',    label: 'Eb Standard' },
+  { value: 'half_step_down', label: 'Medio tono bajo' },
+  { value: 'custom',         label: 'Personalizada' },
+];
 
 export const MARKER_FRETS   = [3, 5, 7, 9, 15, 17, 19, 21];
 export const DOUBLE_MARKERS = [12, 24];

@@ -1,5 +1,7 @@
 import { NOTES } from './constants.js';
 import { $ } from '../utils/dom.js';
+import { TUNINGS, TUNING_LABELS } from './constants.js';
+import { noteToTuningMidi } from './theory.js';
 import * as fretboard from './fretboard.js';
 import * as tunerEngine from './tuner-engine.js';
 import * as tunerUi from './tuner-ui.js';
@@ -12,8 +14,11 @@ import * as backing from './backing-track.js';
 import * as backingUi from './backing-track-ui.js';
 import * as improvisation from './improvisation.js';
 import * as improUi from './improvisation-ui.js';
+import * as metronome from './metronome.js';
+import * as metroUi from './metronome-ui.js';
 import { initTooltip } from './tooltip.js';
 import { initHelpModal } from './help-modal.js';
+import { loadSettings, saveSettings } from './settings.js';
 
 /* ─── State ─── */
 const state = {
@@ -37,7 +42,32 @@ const state = {
   backingActive:   false,
   audioMode:       'generated',
   improvisationActive: false,
+  customTuningMidi:   [43, 38, 33, 28],
+  customTuningLabels: ['G', 'D', 'A', 'E'],
+  customTuningNotes:  ['E', 'A', 'D', 'G'],
 };
+
+let _settingsLoaded = false;
+function autoSave() {
+  if (!_settingsLoaded) return;
+  const bs = backing.getState();
+  saveSettings({
+    rootNote: state.rootNote,
+    scaleType: state.scaleType,
+    arpeggioType: state.arpeggioType,
+    soloArpeggio: state.soloArpeggio,
+    showNames: state.showNoteNames,
+    minFret: state.fretFrom,
+    maxFret: state.fretTo,
+    backingStyle: bs.style,
+    bpm: bs.bpm,
+    backingVolume: bs.volume,
+    synthVolume: state.volume,
+    theme: state.darkMode ? 'dark' : 'light',
+    tuning: state.tuning,
+    customTuningNotes: state.customTuningNotes,
+  });
+}
 
 /* ─── Tuner callbacks ─── */
 tunerEngine.setCallbacks({
@@ -99,6 +129,7 @@ function buildRootNoteGrid() {
       );
       backing.setRootScale(state.rootNote, state.scaleType);
       fretboard.renderScale(state);
+      autoSave();
     });
     grid.appendChild(btn);
   });
@@ -163,6 +194,7 @@ function buildFretRange() {
       btn.classList.add('active');
       fretboard.renderScale(state);
       fretboard.applyFretRange(state);
+      autoSave();
     });
     presets.appendChild(btn);
   });
@@ -185,6 +217,45 @@ function updateRange() {
 
   fretboard.renderScale(state);
   fretboard.applyFretRange(state);
+  autoSave();
+}
+
+function applyTuning() {
+  const ctPanel = $('#customTuningNotes');
+  if (state.tuning === 'custom') {
+    ctPanel.style.display = 'flex';
+    $('#ctNote3').value = state.customTuningNotes[0];
+    $('#ctNote2').value = state.customTuningNotes[1];
+    $('#ctNote1').value = state.customTuningNotes[2];
+    $('#ctNote0').value = state.customTuningNotes[3];
+    buildCustomTuning();
+  } else {
+    ctPanel.style.display = 'none';
+    state.customTuningMidi = [...TUNINGS[state.tuning]];
+    state.customTuningLabels = [...TUNING_LABELS[state.tuning]];
+  }
+  tunerUi.setTuningMidi(state.customTuningMidi);
+  fretboard.buildFretboard(state);
+  autoSave();
+}
+
+function buildCustomTuning() {
+  const notes = [
+    $('#ctNote3').value.trim().toUpperCase().replace(/^B$/,'B') || 'E',
+    $('#ctNote2').value.trim().toUpperCase() || 'A',
+    $('#ctNote1').value.trim().toUpperCase() || 'D',
+    $('#ctNote0').value.trim().toUpperCase() || 'G',
+  ];
+  // Normalize via NOTES
+  const valid = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const normalized = notes.map(n => {
+    const found = valid.find(v => v.toLowerCase() === n.toLowerCase());
+    return found || n;
+  });
+  state.customTuningNotes = normalized;
+  const midiArr = normalized.map((n, i) => noteToTuningMidi(n, 3 - i));
+  state.customTuningMidi = midiArr.every(m => m !== null) ? midiArr : [43, 38, 33, 28];
+  state.customTuningLabels = [...normalized].reverse();
 }
 
 /* ─── Training ─── */
@@ -238,9 +309,9 @@ async function startTraining() {
   if (state.trainingActive) return;
 
   if (!state.micActive) {
-    const ok = await tunerEngine.startMic();
-    if (!ok) {
-      trainingUi.showError('Se necesita acceso al micrófono');
+    const result = await tunerEngine.startMic();
+    if (!result.success) {
+      tunerUi.showMicError(result.message);
       return;
     }
     setMicUI(true);
@@ -284,13 +355,56 @@ function populateStatsFilter() {
 
 /* ─── Init ─── */
 export function init() {
+  const isMobile = window.matchMedia('(max-width: 640px)').matches;
+  const saved = loadSettings(isMobile);
+  state.rootNote      = saved.rootNote;
+  state.scaleType     = saved.scaleType;
+  state.arpeggioType  = saved.arpeggioType;
+  state.soloArpeggio  = saved.soloArpeggio;
+  state.showNoteNames = saved.showNames;
+  state.fretFrom      = saved.minFret;
+  state.fretTo        = saved.maxFret;
+  state.volume        = saved.synthVolume;
+  state.tuning        = saved.tuning;
+  state.customTuningNotes = saved.customTuningNotes || ['E', 'A', 'D', 'G'];
+
+  if (state.tuning === 'custom') {
+    state.customTuningMidi = state.customTuningNotes
+      .map((n, i) => noteToTuningMidi(n, 3 - i));
+    state.customTuningLabels = [...state.customTuningNotes].reverse();
+  } else {
+    state.customTuningMidi = TUNINGS[state.tuning]
+      ? [...TUNINGS[state.tuning]] : [43, 38, 33, 28];
+    state.customTuningLabels = TUNING_LABELS[state.tuning]
+      ? [...TUNING_LABELS[state.tuning]] : ['G', 'D', 'A', 'E'];
+  }
+
+  // Set initial tuner tuning
+  tunerUi.setTuningMidi(state.customTuningMidi);
+
+  // Sync tuning select and custom inputs
+  $('#tuningSelect').value = state.tuning;
+  if (state.tuning === 'custom') {
+    $('#customTuningNotes').style.display = 'flex';
+    $('#ctNote3').value = state.customTuningNotes[0];
+    $('#ctNote2').value = state.customTuningNotes[1];
+    $('#ctNote1').value = state.customTuningNotes[2];
+    $('#ctNote0').value = state.customTuningNotes[3];
+  }
+
   buildRootNoteGrid();
   buildFretRange();
   fretboard.buildFretboard(state);
   initTooltip();
   initHelpModal();
 
-  setTheme(true);
+  setTheme(saved.theme === 'dark');
+
+  backing.setStyle(saved.backingStyle);
+  backing.setBpm(saved.bpm);
+  backing.setVolume(saved.backingVolume);
+
+  _settingsLoaded = true;
 
   setupTrainingCallbacks();
 
@@ -326,20 +440,44 @@ export function init() {
 
   synth.setVolume(state.volume);
 
+  const arpNone = state.arpeggioType === 'none';
+  $('#soloArpeggio').disabled = arpNone;
+  if (arpNone) { $('#soloArpeggio').checked = false; state.soloArpeggio = false; }
+  else { $('#soloArpeggio').checked = state.soloArpeggio; }
+
+  $('#volumeSlider').value = state.volume;
+  $('#arpeggioSelect').value = state.arpeggioType;
+  $('#scaleSelect').value = state.scaleType;
+  $('#showNoteNames').checked = state.showNoteNames;
+  $('#fretFrom').value = state.fretFrom;
+  $('#fretTo').value = state.fretTo;
+
   $('#volumeSlider').addEventListener('input', (e) => {
     state.volume = parseFloat(e.target.value);
     synth.setVolume(state.volume);
+    autoSave();
   });
 
   $('#scaleSelect').addEventListener('change', (e) => {
     state.scaleType = e.target.value;
     backing.setRootScale(state.rootNote, state.scaleType);
     fretboard.renderScale(state);
+    autoSave();
   });
 
   $('#tuningSelect').addEventListener('change', (e) => {
     state.tuning = e.target.value;
-    fretboard.buildFretboard(state);
+    applyTuning();
+  });
+
+  ['ctNote3', 'ctNote2', 'ctNote1', 'ctNote0'].forEach(id => {
+    $('#' + id).addEventListener('input', () => {
+      if (state.tuning !== 'custom') return;
+      buildCustomTuning();
+      tunerUi.setTuningMidi(state.customTuningMidi);
+      fretboard.buildFretboard(state);
+      autoSave();
+    });
   });
 
   $('#showAllNotes').addEventListener('change', (e) => {
@@ -350,6 +488,7 @@ export function init() {
   $('#showNoteNames').addEventListener('change', (e) => {
     state.showNoteNames = e.target.checked;
     fretboard.renderScale(state);
+    autoSave();
   });
 
   $('#arpeggioSelect').addEventListener('change', (e) => {
@@ -361,11 +500,13 @@ export function init() {
       state.soloArpeggio = false;
     }
     fretboard.renderScale(state);
+    autoSave();
   });
 
   $('#soloArpeggio').addEventListener('change', (e) => {
     state.soloArpeggio = e.target.checked;
     fretboard.renderScale(state);
+    autoSave();
   });
 
   $('#fretFrom').addEventListener('change', updateRange);
@@ -373,6 +514,7 @@ export function init() {
 
   $('#themeToggle').addEventListener('click', () => {
     setTheme(!state.darkMode);
+    autoSave();
   });
 
   $('#trainingStart').addEventListener('click', () => {
@@ -403,10 +545,12 @@ export function init() {
       }
       fretboard.renderScale(state);
     } else {
-      const ok = await tunerEngine.startMic();
-      setMicUI(ok);
-      if (!ok) {
-        micStatusText.textContent = 'Sin acceso al micrófono';
+      const result = await tunerEngine.startMic();
+      if (result.success) {
+        setMicUI(true);
+        tunerUi.clearMicError();
+      } else {
+        tunerUi.showMicError(result.message);
       }
     }
   });
@@ -478,10 +622,50 @@ export function init() {
 
   backingUi.onBpmChange((bpm) => {
     backing.setBpm(bpm);
+    autoSave();
   });
 
   backingUi.onVolumeChange((v) => {
     backing.setVolume(v);
+    autoSave();
+  });
+
+  metroUi.init();
+  metroUi.render(metronome.getState());
+
+  metroUi.onPlay(() => {
+    if (metronome.isPlaying()) {
+      metronome.stop();
+    } else {
+      metronome.start();
+    }
+    metroUi.render(metronome.getState());
+  });
+
+  metroUi.onBpm((bpm) => {
+    metronome.setBpm(bpm);
+    metroUi.render(metronome.getState());
+  });
+
+  metroUi.onTap(() => {
+    const bpm = metronome.tapTempo();
+    if (bpm !== null) metroUi.render(metronome.getState());
+  });
+
+  metroUi.onSub((sub) => {
+    metronome.setSubdivision(sub);
+  });
+
+  metroUi.onTs((ts) => {
+    metronome.setTimeSignature(ts);
+  });
+
+  metroUi.onVolume((v) => {
+    metronome.setVolume(v);
+  });
+
+  metroUi.onAccent((on) => {
+    metronome.setAccent(on);
   });
 
   backingUi.bindStyleButtons((style) => {
@@ -504,6 +688,7 @@ export function init() {
     backing.stop();
     backing.setStyle(style);
     backingUi.render(backing.getState());
+    autoSave();
     if (state.backingActive) {
       backing.setRootScale(state.rootNote, state.scaleType);
       backing.start();

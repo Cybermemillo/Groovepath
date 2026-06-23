@@ -1,4 +1,4 @@
-import { getAudioContext, resumeAudioContext } from './audio-engine.js';
+import { getAudioContext, resumeAudioContext, getMasterNode } from './audio-engine.js';
 import { getChordRoot, noteIndex } from './theory.js';
 import { NOTES, BACKING_STYLES, PROGRESSIONS } from './constants.js';
 
@@ -8,7 +8,7 @@ let state = {
   bpm: 100,
   root: 'A',
   scale: 'minor_pentatonic',
-  volume: 1,
+  volume: 0.8,
 };
 
 let schedulerTimer = null;
@@ -42,7 +42,7 @@ export function setBpm(bpm) {
 }
 
 export function setVolume(v) {
-  state.volume = Math.max(0, Math.min(1.2, v));
+  state.volume = Math.max(0, Math.min(1, v));
 }
 
 export function isPlaying() {
@@ -59,7 +59,7 @@ function playKick(time, vol) {
   gain.gain.setValueAtTime(0.9 * vol, time);
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(getMasterNode());
   osc.start(time);
   osc.stop(time + 0.3);
 }
@@ -87,8 +87,8 @@ function playSnare(time, vol) {
   oGain.gain.setValueAtTime(0.5 * vol, time);
   oGain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
 
-  noise.connect(hp); hp.connect(nGain); nGain.connect(ctx.destination);
-  osc.connect(oGain); oGain.connect(ctx.destination);
+  noise.connect(hp); hp.connect(nGain); nGain.connect(getMasterNode());
+  osc.connect(oGain); oGain.connect(getMasterNode());
   noise.start(time); noise.stop(time + 0.18);
   osc.start(time); osc.stop(time + 0.08);
 }
@@ -110,7 +110,7 @@ function playHat(time, vol) {
   gain.gain.setValueAtTime(0.12 * vol, time);
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
 
-  noise.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+  noise.connect(bp); bp.connect(gain); gain.connect(getMasterNode());
   noise.start(time); noise.stop(time + 0.08);
 }
 
@@ -133,7 +133,7 @@ function playChordNote(midi, time, duration, vol) {
   gain.gain.linearRampToValueAtTime(gv * 0.7, time + 0.05);
   gain.gain.setValueAtTime(0, time + duration);
 
-  osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  osc.connect(filter); filter.connect(gain); gain.connect(getMasterNode());
   osc.start(time); osc.stop(time + duration + 0.03);
 }
 
@@ -156,7 +156,7 @@ function playBass(midi, time, vol) {
   gain.gain.linearRampToValueAtTime(gv * 0.4, time + 0.08);
   gain.gain.setValueAtTime(0, time + 0.35);
 
-  osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  osc.connect(filter); filter.connect(gain); gain.connect(getMasterNode());
   osc.start(time); osc.stop(time + 0.4);
 }
 

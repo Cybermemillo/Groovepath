@@ -39,10 +39,16 @@ export async function startMic() {
     lastPitchNote = null;
     smoothCents   = 0;
     loop();
-    return true;
+    return { success: true };
   } catch (err) {
     console.error('Error al acceder al micrófono:', err);
-    return false;
+    if (err.name === 'NotAllowedError') {
+      return { success: false, error: 'denied', message: 'Permiso de micrófono denegado. Actívalo en los permisos del navegador y recarga.' };
+    }
+    if (err.name === 'NotFoundError') {
+      return { success: false, error: 'notfound', message: 'No se ha detectado ningún micrófono. Conecta uno y vuelve a intentarlo.' };
+    }
+    return { success: false, error: 'unknown', message: err.message || 'Error desconocido al acceder al micrófono.' };
   }
 }
 

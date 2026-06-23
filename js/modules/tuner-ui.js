@@ -1,4 +1,5 @@
 import { $ } from '../utils/dom.js';
+import { midiToStringInfo } from './theory.js';
 
 const detectedNoteEl = $('#detectedNote');
 const detectedOctave = $('#detectedOctave');
@@ -6,6 +7,25 @@ const tunerFreqEl    = $('#tunerFreq');
 const tunerStatus    = $('#tunerStatus');
 const meterNeedle    = $('#meterNeedle');
 const meterFill      = $('#meterFill');
+const micErrorBanner = $('#micErrorBanner');
+const micErrorText   = $('#micErrorText');
+const stringInfoEl   = $('#stringInfo');
+
+let activeTuningMidi = [43, 38, 33, 28];
+
+export function setTuningMidi(midiArray) {
+  activeTuningMidi = midiArray || [43, 38, 33, 28];
+}
+
+export function showMicError(msg) {
+  micErrorText.textContent = msg;
+  micErrorBanner.style.display = 'flex';
+}
+
+export function clearMicError() {
+  micErrorBanner.style.display = 'none';
+  micErrorText.textContent = '';
+}
 
 export function updateTunerDisplay(note, freq, cents, midi = null) {
   if (!note) {
@@ -17,6 +37,7 @@ export function updateTunerDisplay(note, freq, cents, midi = null) {
     meterNeedle.style.left     = '50%';
     meterFill.style.width      = '0';
     meterFill.className        = 'meter-fill';
+    stringInfoEl.textContent   = '';
     return;
   }
 
@@ -24,6 +45,17 @@ export function updateTunerDisplay(note, freq, cents, midi = null) {
   detectedNoteEl.textContent = note;
   detectedOctave.textContent = `oct. ${octave}`;
   tunerFreqEl.textContent    = `${freq.toFixed(1)} Hz`;
+
+  if (midi !== null) {
+    const info = midiToStringInfo(midi, activeTuningMidi);
+    if (info) {
+      stringInfoEl.textContent = info.fret === 0
+        ? `Cu. ${info.string + 1} · al aire`
+        : `Cu. ${info.string + 1} · tr. ${info.fret}`;
+    } else {
+      stringInfoEl.textContent = '';
+    }
+  }
 
   const clampedCents = Math.max(-50, Math.min(50, cents));
   const needlePos    = 50 + clampedCents;

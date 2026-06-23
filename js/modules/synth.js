@@ -1,4 +1,4 @@
-import { getAudioContext, resumeAudioContext } from './audio-engine.js';
+import { getAudioContext, resumeAudioContext, getMasterNode } from './audio-engine.js';
 import { midiToFreq } from './theory.js';
 
 let volume = 0.5;
@@ -52,7 +52,7 @@ export function playNote(midi, duration = 800) {
 
   osc.connect(filter);
   filter.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(getMasterNode());
 
   osc.start(now);
   osc.stop(end + 0.1);
@@ -89,7 +89,7 @@ export function playFeedback(success) {
   }
 
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(getMasterNode());
   osc.start(now);
   osc.stop(now + (success ? 0.22 : 0.45));
 }
