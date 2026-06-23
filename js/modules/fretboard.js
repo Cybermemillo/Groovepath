@@ -174,3 +174,16 @@ export function applyFretRange(state) {
     num.classList.toggle('off-range', i > 0 && (i < fretFrom || i > fretTo));
   });
 }
+
+export function highlightTarget(note) {
+  clearTarget();
+  dotsCache.forEach(dot => {
+    if (dot.dataset.dotNote === note) {
+      dot.classList.add('target');
+    }
+  });
+}
+
+export function clearTarget() {
+  dotsCache.forEach(dot => dot.classList.remove('target'));
+}

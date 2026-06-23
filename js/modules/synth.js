@@ -66,3 +66,30 @@ export function playNote(midi, duration = 800) {
     stopTimer = null;
   }, duration + 120);
 }
+
+export function playFeedback(success) {
+  resumeAudioContext();
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  if (success) {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.setValueAtTime(1100, now + 0.06);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.2);
+  } else {
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(150, now);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.4);
+  }
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + (success ? 0.22 : 0.45));
+}

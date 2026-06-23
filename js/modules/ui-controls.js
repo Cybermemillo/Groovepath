@@ -4,6 +4,8 @@ import * as fretboard from './fretboard.js';
 import * as tunerEngine from './tuner-engine.js';
 import * as tunerUi from './tuner-ui.js';
 import * as synth from './synth.js';
+import * as training from './training.js';
+import * as trainingUi from './training-ui.js';
 import { initTooltip } from './tooltip.js';
 
 /* ─── State ─── */
@@ -24,6 +26,7 @@ const state = {
   detectedMidi:   null,
   detectedCents:  0,
   detectedFreq:   0,
+  trainingActive:  false,
 };
 
 /* ─── Tuner callbacks ─── */
@@ -34,7 +37,12 @@ tunerEngine.setCallbacks({
     state.detectedFreq  = freq;
     state.detectedCents = cents;
     tunerUi.updateTunerDisplay(note, freq, cents, midi);
-    if (changed) fretboard.renderScale(state);
+
+    if (state.trainingActive) {
+      training.evaluatePitch(note, cents);
+    } else if (changed) {
+      fretboard.renderScale(state);
+    }
   },
   onSilence() {
     state.detectedNote  = null;
@@ -42,7 +50,9 @@ tunerEngine.setCallbacks({
     state.detectedCents = 0;
     state.detectedFreq  = 0;
     tunerUi.updateTunerDisplay(null, 0, 0);
-    fretboard.renderScale(state);
+    if (!state.trainingActive) {
+      fretboard.renderScale(state);
+    }
   },
 });
 
@@ -162,6 +172,67 @@ function updateRange() {
   fretboard.applyFretRange(state);
 }
 
+/* ─── Training ─── */
+function setupTrainingCallbacks() {
+  training.setCallbacks({
+    onCountdown(n) {
+      trainingUi.renderCountdown(n);
+    },
+    onStart(target) {
+      fretboard.highlightTarget(target.note);
+      trainingUi.renderStart(target);
+    },
+    onCorrect({ note, points, streak, score }) {
+      trainingUi.renderCorrect({ points, streak, score });
+      synth.playFeedback(true);
+    },
+    onWrong({ expected, played, streak, score }) {
+      trainingUi.renderWrong({ expected, played, streak, score });
+      synth.playFeedback(false);
+    },
+    onFinish(results) {
+      trainingUi.renderResults(results);
+      fretboard.clearTarget();
+      state.trainingActive = false;
+    },
+    onError(msg) {
+      trainingUi.showError(msg);
+      fretboard.clearTarget();
+      trainingUi.renderIdle();
+      state.trainingActive = false;
+    },
+  });
+}
+
+async function startTraining() {
+  if (state.trainingActive) return;
+
+  if (!state.micActive) {
+    const ok = await tunerEngine.startMic();
+    if (!ok) {
+      trainingUi.showError('Se necesita acceso al micrófono');
+      return;
+    }
+    setMicUI(true);
+  }
+
+  const started = training.startTraining({ ...state });
+  if (started) {
+    state.trainingActive = true;
+  }
+}
+
+function stopTraining() {
+  const results = training.stopTraining();
+  fretboard.clearTarget();
+  if (results) {
+    trainingUi.renderResults(results);
+  } else {
+    trainingUi.renderIdle();
+  }
+  state.trainingActive = false;
+}
+
 /* ─── Init ─── */
 export function init() {
   buildRootNoteGrid();
@@ -170,6 +241,8 @@ export function init() {
   initTooltip();
 
   setTheme(true);
+
+  setupTrainingCallbacks();
 
   $('#soloArpeggio').disabled = true;
 
@@ -223,11 +296,23 @@ export function init() {
     setTheme(!state.darkMode);
   });
 
+  $('#trainingStart').addEventListener('click', () => {
+    if (state.trainingActive) {
+      stopTraining();
+    } else {
+      startTraining();
+    }
+  });
+
   micToggle.addEventListener('click', async () => {
     if (state.micActive) {
       tunerEngine.stopMic();
       setMicUI(false);
       tunerUi.updateTunerDisplay(null, 0, 0);
+      if (state.trainingActive) {
+        stopTraining();
+        return;
+      }
       fretboard.renderScale(state);
     } else {
       const ok = await tunerEngine.startMic();
