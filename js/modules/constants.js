@@ -33,5 +33,16 @@ export const MARKER_FRETS   = [3, 5, 7, 9, 15, 17, 19, 21];
 export const DOUBLE_MARKERS = [12, 24];
 export const ALL_MARKERS    = new Set([...MARKER_FRETS, ...DOUBLE_MARKERS]);
 
+export const ARPEGGIOS = {
+  major_triad:    { intervals: [0, 4, 7],       degrees: ['R', '3', '5'] },
+  minor_triad:    { intervals: [0, 3, 7],       degrees: ['R', 'b3', '5'] },
+  major_7:        { intervals: [0, 4, 7, 11],   degrees: ['R', '3', '5', '7'] },
+  dominant_7:     { intervals: [0, 4, 7, 10],   degrees: ['R', '3', '5', 'b7'] },
+  minor_7:        { intervals: [0, 3, 7, 10],   degrees: ['R', 'b3', '5', 'b7'] },
+  minor_7b5:      { intervals: [0, 3, 6, 10],   degrees: ['R', 'b3', 'b5', 'b7'] },
+  diminished:     { intervals: [0, 3, 6, 9],    degrees: ['R', 'b3', 'b5', 'bb7'] },
+  augmented:      { intervals: [0, 4, 8],       degrees: ['R', '3', '#5'] },
+};
+
 export const NUM_FRETS   = 24;
 export const NUM_STRINGS = 4;

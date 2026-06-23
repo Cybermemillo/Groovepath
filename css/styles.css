@@ -25,6 +25,8 @@
   --detected:      #F5C518;   /* nota detectada */
   --detected-glow: rgba(245, 197, 24, 0.40);
   --off-scale:     #3A3530;
+  --arpeggio:      #A855F7;   /* arpegio */
+  --arpeggio-glow: rgba(168, 85, 247, 0.35);
 
   /* Fretboard materials */
   --wood:         #1A1208;
@@ -70,6 +72,8 @@
   --detected:      #B5860A;
   --detected-glow: rgba(181, 134, 10, 0.30);
   --off-scale:     #D8D4C8;
+  --arpeggio:      #9333EA;
+  --arpeggio-glow: rgba(147, 51, 234, 0.25);
 
   --wood:       #3B2408;
   --wood-light: #4E3012;
@@ -176,7 +180,7 @@ body {
 /* ===== CONTROLS PANEL ===== */
 .controls-panel {
   display: grid;
-  grid-template-columns: auto 1fr 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   gap: 1.25rem;
   align-items: start;
   background: var(--bg-surface);
@@ -279,6 +283,63 @@ body {
 }
 .toggle-switch input:checked + .toggle-knob { background: var(--accent); border-color: var(--accent); }
 .toggle-switch input:checked + .toggle-knob::before { transform: translateX(16px); background: #fff; }
+
+/* ===== FRET RANGE CONTROLS ===== */
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.range-select {
+  width: 58px;
+  padding-left: 6px;
+  padding-right: 6px;
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.range-sep {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.preset-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.preset-btn {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.preset-btn:hover { border-color: var(--scale-note); color: var(--scale-note); }
+.preset-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ===== OFF-RANGE CELLS ===== */
+.fret-cell.off-range {
+  opacity: 0.25;
+  pointer-events: none;
+}
+.fret-cell.off-range .string-line { opacity: 0.25; }
+.fret-cell.off-range .note-dot { opacity: 0 !important; }
+.fret-cell.off-range .fret-marker { opacity: 0.3; }
+.fret-num.off-range {
+  opacity: 0.25;
+}
 
 /* ===== FRETBOARD ===== */
 .fretboard-section {
@@ -453,6 +514,28 @@ body {
 @keyframes detected-pulse {
   0%, 100% { box-shadow: 0 0 14px var(--detected-glow), 0 0 28px var(--detected-glow); }
   50%       { box-shadow: 0 0 22px var(--detected-glow), 0 0 44px var(--detected-glow); }
+}
+
+/* Arpeggio dot — diamond shape */
+.note-dot.arpeggio {
+  border-radius: 5px;
+  transform: rotate(45deg) scale(1);
+  background: var(--arpeggio);
+  color: #fff;
+  box-shadow: 0 0 12px var(--arpeggio-glow);
+}
+.note-dot.arpeggio .dot-text {
+  display: block;
+  transform: rotate(-45deg);
+  font-size: 0.62rem;
+}
+.note-dot.arpeggio.visible {
+  opacity: 1;
+}
+.note-dot.arpeggio.detected {
+  background: var(--detected) !important;
+  color: #0D0C00 !important;
+  box-shadow: 0 0 18px var(--detected-glow), 0 0 36px var(--detected-glow) !important;
 }
 
 /* Fret numbers row */
@@ -684,6 +767,7 @@ body {
 .legend-dot.scale-note{ background: var(--scale-note); }
 .legend-dot.detected  { background: var(--detected); }
 .legend-dot.off-scale { background: var(--off-scale); border: 1px solid var(--border); }
+.legend-dot.arpeggio { background: var(--arpeggio); border-radius: 2px; transform: rotate(45deg); }
 
 /* ===== TOOLTIP ===== */
 .note-tooltip {
@@ -707,11 +791,8 @@ body {
 @media (max-width: 900px) {
   .controls-panel {
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
   }
   .control-group:first-child { grid-column: 1 / -1; }
-  .toggle-group { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: flex-start; }
-  .toggle-label { flex-direction: row; align-items: center; gap: 0.75rem; }
 }
 
 @media (max-width: 640px) {

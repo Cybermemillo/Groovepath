@@ -73,12 +73,57 @@
       </div>
 
       <div class="control-group">
+        <label class="control-label">Arpegio</label>
+        <select id="arpeggioSelect" class="styled-select">
+          <option value="none">Ninguno</option>
+          <option value="major_triad">Triada mayor</option>
+          <option value="minor_triad">Triada menor</option>
+          <option value="major_7">Mayor 7</option>
+          <option value="dominant_7">Dominante 7</option>
+          <option value="minor_7">Menor 7</option>
+          <option value="minor_7b5">Menor 7 b5</option>
+          <option value="diminished">Disminuido</option>
+          <option value="augmented">Aumentado</option>
+        </select>
+      </div>
+
+      <div class="control-group toggle-group">
+        <label class="toggle-label" for="soloArpeggio">
+          <span>Solo arpegio</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="soloArpeggio" />
+            <span class="toggle-knob"></span>
+          </div>
+        </label>
+      </div>
+
+      <div class="control-group">
         <label class="control-label">Afinación</label>
         <select id="tuningSelect" class="styled-select">
           <option value="standard">Estándar (EADG)</option>
           <option value="drop_d">Drop D (DADG)</option>
           <option value="d_standard">D Estándar (DADG-1step)</option>
         </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Rango de trastes</label>
+        <div class="range-row">
+          <select id="fretFrom" class="styled-select range-select"></select>
+          <span class="range-sep">–</span>
+          <select id="fretTo" class="styled-select range-select"></select>
+        </div>
+        <div class="preset-row" id="rangePresets"></div>
+      </div>
+
+      <div class="control-group toggle-group">
+        <label class="toggle-label" for="showNoteNames">
+          <span>Mostrar nombres</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="showNoteNames" checked />
+            <span class="toggle-knob"></span>
+          </div>
+        </label>
       </div>
 
       <div class="control-group toggle-group">
@@ -172,6 +217,10 @@
       <div class="legend-item">
         <span class="legend-dot off-scale"></span>
         <span>Fuera de escala</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot arpeggio"></span>
+        <span>Arpegio</span>
       </div>
     </section>
 

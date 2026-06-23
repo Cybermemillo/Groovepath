@@ -3,7 +3,7 @@ import {
   MARKER_FRETS, DOUBLE_MARKERS, ALL_MARKERS,
   NUM_FRETS, NUM_STRINGS,
 } from './constants.js';
-import { midiToNote, getScaleNotes } from './theory.js';
+import { midiToNote, getScaleNotes, getArpeggioNotes } from './theory.js';
 import { showTooltip, hideTooltip } from './tooltip.js';
 import { $ } from '../utils/dom.js';
 
@@ -66,7 +66,7 @@ export function buildFretboard(state) {
         dot.dataset.dotNote   = noteName;
         dot.dataset.dotString = s;
         dot.dataset.dotFret   = f;
-        dot.textContent = noteName;
+        dot.innerHTML = '<span class="dot-text">' + noteName + '</span>';
         cell.appendChild(dot);
       }
 
@@ -91,16 +91,42 @@ export function buildFretboard(state) {
 
   dotsCache = Array.from(board.querySelectorAll('.note-dot'));
   renderScale(state);
+  applyFretRange(state);
 }
 
 export function renderScale(state) {
   const scaleNotes   = getScaleNotes(state.rootNote, state.scaleType);
+  const arpeggio     = getArpeggioNotes(state.rootNote, state.arpeggioType);
   const rootNote     = state.rootNote;
   const detectedNote = state.detectedNote;
   const showAll      = state.showAllNotes;
+  const showNames    = state.showNoteNames;
+  const fretFrom     = state.fretFrom;
+  const fretTo       = state.fretTo;
+  const soloArpeggio = state.soloArpeggio;
 
   dotsCache.forEach(dot => {
-    const note = dot.dataset.dotNote;
+    const note     = dot.dataset.dotNote;
+    const fret     = parseInt(dot.dataset.dotFret);
+    const textSpan = dot.querySelector('.dot-text');
+
+    if (fret < fretFrom || fret > fretTo) {
+      dot.className = 'note-dot';
+      return;
+    }
+
+    const isArpeggio = arpeggio && arpeggio.notes.includes(note);
+
+    if (soloArpeggio && !isArpeggio) {
+      dot.className = 'note-dot';
+      return;
+    }
+
+    if (textSpan) {
+      textSpan.textContent = isArpeggio
+        ? arpeggio.degrees[note]
+        : (showNames ? note : '');
+    }
 
     const isRoot     = note === rootNote;
     const inScale    = scaleNotes.includes(note);
@@ -108,16 +134,31 @@ export function renderScale(state) {
 
     let cls = 'note-dot';
 
-    if (isDetected) {
-      cls += ' detected visible';
-    } else if (isRoot) {
-      cls += ' tonic visible';
-    } else if (inScale) {
-      cls += ' scale-note visible';
-    } else if (showAll) {
-      cls += ' off-scale visible';
+    if (isDetected) cls += ' detected';
+    if (isArpeggio) cls += ' arpeggio';
+    else if (isRoot) cls += ' tonic';
+    else if (inScale) cls += ' scale-note';
+    else if (showAll) cls += ' off-scale';
+
+    if (isDetected || isArpeggio || isRoot || inScale || showAll) {
+      cls += ' visible';
     }
 
     dot.className = cls;
+  });
+}
+
+export function applyFretRange(state) {
+  const board = $('#fretboard');
+  const nums  = $('#fretNumbers');
+  const { fretFrom, fretTo } = state;
+
+  board.querySelectorAll('.fret-cell').forEach(cell => {
+    const fret = parseInt(cell.dataset.fret);
+    cell.classList.toggle('off-range', fret > 0 && (fret < fretFrom || fret > fretTo));
+  });
+
+  nums.querySelectorAll('.fret-num').forEach((num, i) => {
+    num.classList.toggle('off-range', i > 0 && (i < fretFrom || i > fretTo));
   });
 }
