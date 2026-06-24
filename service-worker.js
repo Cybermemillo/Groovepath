@@ -1,4 +1,4 @@
-const CACHE = 'basslab-v2';
+const CACHE = 'basslab-v3';
 const ASSETS = [
   '.',
   'index.html',
@@ -38,6 +38,7 @@ const ASSETS = [
   'js/modules/eastereggs-data.js',
   'js/modules/export-import.js',
   'js/modules/help-modal.js',
+  'js/modules/news-modal.js',
   'js/modules/toast.js',
   'js/modules/user-points.js',
   'favicon.svg',

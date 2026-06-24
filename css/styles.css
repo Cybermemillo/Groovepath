@@ -2300,6 +2300,94 @@ body {
 }
 .help-modal-close:hover { color: var(--accent); border-color: var(--accent); }
 
+/* ===== NEWS MODAL & BADGE ===== */
+.news-btn { position: relative; }
+.news-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: #ff4444;
+  border-radius: 50%;
+  display: none;
+  pointer-events: none;
+}
+.news-badge-mobile {
+  display: none;
+  width: 8px;
+  height: 8px;
+  background: #ff4444;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+.news-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+.news-tab {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition), border-color var(--transition);
+}
+.news-tab.active {
+  color: var(--scale-note);
+  border-bottom-color: var(--scale-note);
+}
+.news-tab:hover { color: var(--text-primary); }
+
+.news-entry {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.news-entry:last-child { border-bottom: none; }
+
+.news-entry-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+.news-entry-date {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+}
+.news-entry-version {
+  font-size: 0.625rem;
+  font-weight: 600;
+  background: var(--scale-note);
+  color: #0f0f19;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'Rajdhani', sans-serif;
+}
+.news-entry-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+.news-entry-body {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0.15rem 0 0;
+}
+
 /* ===== ROUTINES ===== */
 .routine-list {
   display: flex;
@@ -3078,8 +3166,9 @@ body {
 .metro-check input { accent-color: var(--scale-note); }
 
 @media (max-width: 520px) {
-  .help-modal { width: 96vw; padding: 1.25rem 1rem; }
-  .help-modal h2 { font-size: 1.25rem; }
+  .help-modal, .news-modal { width: 96vw; padding: 1.25rem 1rem; }
+  .help-modal h2, .news-modal h2 { font-size: 1.25rem; }
+  .news-tab { font-size: 0.8rem; padding: 0.4rem 0.75rem; }
   .metronome-widget { bottom: 0.5rem; right: 0.5rem; }
   .metro-panel { min-width: 200px; padding: 0.6rem 0.75rem; }
 }

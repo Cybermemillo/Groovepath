@@ -27,6 +27,7 @@ import * as eastereggs from './eastereggs.js';
 import { addPointsWithToast } from './achievements-ui.js';
 import { initTooltip } from './tooltip.js';
 import { initHelpModal } from './help-modal.js';
+import { initNewsModal } from './news-modal.js';
 import { loadSettings, saveSettings } from './settings.js';
 
 /* ─── State ─── */
@@ -474,6 +475,7 @@ export function init() {
   fretboard.buildFretboard(state);
   initTooltip();
   initHelpModal();
+  initNewsModal();
 
   setTheme(saved.theme === 'dark');
 

@@ -23,12 +23,14 @@ BassLab is a vanilla HTML/CSS/JS interactive bass guitar trainer. Single page, n
 - `js/modules/audio-engine.js` — singleton AudioContext
 - `js/modules/synth.js` — monophonic bass synth (ADSR + lowpass filter)
 - `js/modules/fretboard.js` — SVG-like DOM rendering of the fretboard
+- `js/modules/help-modal.js` — help modal (open/close, body scroll lock)
+- `js/modules/news-modal.js` — news/changelog modal with unread badge
 - `js/utils/dom.js` — `$(selector)` shorthand
 
 ## State management
 - `ui-controls.js` holds a global `state` object (rootNote, scaleType, tuning, micActive, etc.)
 - `improvisationState` object for chord/scale highlighting on fretboard
-- `localStorage` keys: `basslab_settings`, `basslab_stats`, `basslab_practice_time`, `basslab_routines`, `basslab_achievements`, `basslab_user_points`, `basslab_achievements_tracker`, `basslab_daily_goal`
+- `localStorage` keys: `basslab_settings`, `basslab_stats`, `basslab_practice_time`, `basslab_routines`, `basslab_achievements`, `basslab_user_points`, `basslab_achievements_tracker`, `basslab_daily_goal`, `basslab_news_seen`
 
 ## Module pattern
 Modules export functions; they communicate via callbacks set from ui-controls.js. Example:
@@ -44,6 +46,7 @@ training.setCallbacks({
 `noteToDisplay(noteName, notation)` in `constants.js` translates between English (`C`) and Spanish (`Do`). Affects: fretboard, tuner, training target/feedback, improvisation chord names, root grid.
 
 ## Key recent changes (Jun 2026)
+- News/changelog modal with unread badge (bell icon in header)
 - Stats moved to header modal (was sidebar panel)
 - Training panels side-by-side with equal height (CSS grid `align-items: stretch`)
 - Improvisation: difficulty levels with names, guided mode, chord timeline, results summary

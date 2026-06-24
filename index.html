@@ -43,6 +43,10 @@
           </div>
         </span>
         <button id="helpBtn" class="btn-icon help-btn desktop-only" title="Ayuda" aria-label="Ayuda">?</button>
+        <button id="newsBtn" class="btn-icon news-btn desktop-only" title="Noticias" aria-label="Noticias">
+          <i class="fa-solid fa-bell"></i>
+          <span class="news-badge" id="newsBadge" aria-hidden="true"></span>
+        </button>
         <button id="notationToggle" class="btn-icon" title="Notación: inglesa / española" aria-label="Cambiar notación">
           <span style="font-size:0.8rem;font-weight:600;">Do</span>
         </button>
@@ -71,6 +75,7 @@
   <div class="mobile-menu" id="mobileMenu">
     <button class="mobile-menu-item" id="mobileStatsBtn"><i class="fa-solid fa-chart-bar"></i> Estadísticas</button>
     <button class="mobile-menu-item" id="mobileHelpBtn">? Ayuda</button>
+    <button class="mobile-menu-item" id="mobileNewsBtn"><i class="fa-solid fa-bell"></i> Noticias <span class="news-badge-mobile" id="mobileNewsBadge"></span></button>
     <button class="mobile-menu-item" id="mobileExportBtn"><i class="fa-solid fa-download"></i> Exportar datos</button>
     <button class="mobile-menu-item" id="mobileImportBtn"><i class="fa-solid fa-upload"></i> Importar datos</button>
   </div>
@@ -726,6 +731,20 @@
         </ul>
       </section>
 
+    </div>
+  </div>
+
+  <!-- ===== NEWS MODAL ===== -->
+  <div class="help-modal-backdrop news-modal-backdrop" id="newsModalBackdrop">
+    <div class="help-modal news-modal" id="newsModal">
+      <button class="help-modal-close" id="newsModalClose" aria-label="Cerrar noticias">&times;</button>
+      <h2>Noticias</h2>
+      <div class="news-tabs">
+        <button class="news-tab active" data-tab="updates">Actualizaciones</button>
+        <button class="news-tab" data-tab="news">Novedades</button>
+      </div>
+      <div class="news-content" id="newsUpdates"></div>
+      <div class="news-content" id="newsNews" style="display:none"></div>
     </div>
   </div>
 
