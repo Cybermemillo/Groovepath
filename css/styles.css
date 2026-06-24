@@ -2064,6 +2064,7 @@ body {
   .header-controls { gap: 0.35rem; position: relative; }
   #volumeSlider { display: none; }
   .volume-mobile-wrap { display: inline-flex; position: relative; }
+  .volume-mobile-wrap:not(.active) .volume-popover { display: none; }
   .volume-mobile-wrap.active { display: inline-flex; }
   .volume-mobile-wrap.active .volume-popover { display: block; }
   .training-layout.full-width { grid-template-columns: 1fr; }
