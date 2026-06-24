@@ -6,6 +6,9 @@ let callbacks = {};
 let targetHits = 0;
 let wrongHits = 0;
 let lastNote = null;
+let awaitingSilence = false;
+let totalReactionMs = 0;
+let fastestMs = 0;
 
 const HIT_THRESHOLD = 4;
 const WRONG_THRESHOLD = 5;
@@ -72,6 +75,7 @@ function shuffle(arr) {
 }
 
 function nextTarget() {
+  awaitingSilence = false;
   if (session.currentIndex >= session.totalTargets) {
     finishSession();
     return;
@@ -97,6 +101,9 @@ function onCorrect(cents) {
   if (!session || !session.target) return;
 
   const elapsed = Date.now() - session.targetTime;
+  totalReactionMs += elapsed;
+  if (fastestMs === 0 || elapsed < fastestMs) fastestMs = elapsed;
+
   let points = 100;
 
   if (Math.abs(cents) <= 8) points += 50;
@@ -114,17 +121,13 @@ function onCorrect(cents) {
   session.correct++;
   session.currentIndex++;
 
-  if (callbacks.onCorrect) {
-    callbacks.onCorrect({ note: session.target.note, points, streak: session.streak, score: session.score });
-  }
+  awaitingSilence = true;
+  targetHits = 0;
+  wrongHits = 0;
 
-  setTimeout(() => {
-    if (session && session.currentIndex < session.totalTargets) {
-      nextTarget();
-    } else if (session && session.currentIndex >= session.totalTargets) {
-      finishSession();
-    }
-  }, 800);
+  if (callbacks.onCorrect) {
+    callbacks.onCorrect({ note: session.target.note, points, streak: session.streak, score: session.score, reactionMs: elapsed });
+  }
 }
 
 function onWrong(played) {
@@ -133,22 +136,21 @@ function onWrong(played) {
   session.streak = 0;
   session.currentIndex++;
 
+  awaitingSilence = true;
+  targetHits = 0;
+  wrongHits = 0;
+
   if (callbacks.onWrong) {
     callbacks.onWrong({ expected: session.target.note, played, streak: session.streak, score: session.score });
   }
-
-  setTimeout(() => {
-    if (session && session.currentIndex < session.totalTargets) {
-      nextTarget();
-    } else if (session && session.currentIndex >= session.totalTargets) {
-      finishSession();
-    }
-  }, 1200);
 }
 
 function finishSession() {
   if (!session) return;
   session.active = false;
+  awaitingSilence = false;
+
+  const avgMs = session.correct > 0 ? Math.round(totalReactionMs / session.correct) : 0;
 
   if (callbacks.onFinish) {
     callbacks.onFinish({
@@ -157,8 +159,13 @@ function finishSession() {
       wrong: session.wrong,
       maxStreak: session.maxStreak,
       total: session.totalTargets,
+      avgReactionMs: avgMs,
+      fastestMs,
     });
   }
+  session = null;
+  totalReactionMs = 0;
+  fastestMs = 0;
 }
 
 function runCountdown(cb) {
@@ -176,9 +183,12 @@ function runCountdown(cb) {
   tick();
 }
 
-export function startTraining(stateOverride) {
+export function startTraining(stateOverride, totalTargets = 10) {
   if (session && session.active) return;
 
+  awaitingSilence = false;
+  totalReactionMs = 0;
+  fastestMs = 0;
   session = {
     active: true,
     state: { ...stateOverride },
@@ -189,7 +199,7 @@ export function startTraining(stateOverride) {
     maxStreak: 0,
     correct: 0,
     wrong: 0,
-    totalTargets: 10,
+    totalTargets,
     currentIndex: 0,
   };
 
@@ -211,14 +221,20 @@ export function startTraining(stateOverride) {
 export function stopTraining() {
   if (!session) return null;
   session.active = false;
+  awaitingSilence = false;
+  const avgMs = session.correct > 0 ? Math.round(totalReactionMs / session.correct) : 0;
   const results = {
     score: session.score,
     correct: session.correct,
     wrong: session.wrong,
     maxStreak: session.maxStreak,
     total: session.totalTargets,
+    avgReactionMs: avgMs,
+    fastestMs,
   };
   session = null;
+  totalReactionMs = 0;
+  fastestMs = 0;
   targetHits = 0;
   wrongHits = 0;
   lastNote = null;
@@ -228,12 +244,23 @@ export function stopTraining() {
 function endTraining() {
   if (!session) return;
   session.active = false;
+  awaitingSilence = false;
   if (callbacks.onError) callbacks.onError('No hay notas disponibles en el rango actual');
   session = null;
 }
 
+export function setSilence(isSilent) {
+  if (awaitingSilence && isSilent && session) {
+    if (session.currentIndex < session.totalTargets) {
+      nextTarget();
+    } else {
+      finishSession();
+    }
+  }
+}
+
 export function evaluatePitch(note, cents) {
-  if (!session || !session.active || !session.target) return;
+  if (!session || !session.active || !session.target || awaitingSilence) return;
 
   if (note === session.target.note && Math.abs(cents) <= 25) {
     targetHits++;
@@ -264,4 +291,8 @@ export function evaluatePitch(note, cents) {
 
 export function isActive() {
   return session && session.active;
+}
+
+export function isAwaitingSilence() {
+  return awaitingSilence;
 }

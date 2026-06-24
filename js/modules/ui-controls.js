@@ -1,4 +1,5 @@
 import { NOTES } from './constants.js';
+import { noteToDisplay } from './constants.js';
 import { $ } from '../utils/dom.js';
 import { TUNINGS, TUNING_LABELS } from './constants.js';
 import { noteToTuningMidi } from './theory.js';
@@ -50,6 +51,7 @@ const state = {
   backingActive:   false,
   audioMode:       'generated',
   improvisationActive: false,
+  notation:        'english',
   customTuningMidi:   [43, 38, 33, 28],
   customTuningLabels: ['G', 'D', 'A', 'E'],
   customTuningNotes:  ['E', 'A', 'D', 'G'],
@@ -75,6 +77,7 @@ function autoSave() {
     tuning: state.tuning,
     customTuningNotes: state.customTuningNotes,
     dailyGoalMinutes: stats.getDailyGoal(),
+    notation: state.notation,
   });
 }
 
@@ -85,7 +88,7 @@ tunerEngine.setCallbacks({
     state.detectedMidi  = midi;
     state.detectedFreq  = freq;
     state.detectedCents = cents;
-    tunerUi.updateTunerDisplay(note, freq, cents, midi);
+    tunerUi.updateTunerDisplay(note, freq, cents, midi, state.notation);
 
     eastereggs.onNoteDetected(midi, state.customTuningMidi);
     const si = findStringFret(midi, state.customTuningMidi);
@@ -112,6 +115,8 @@ tunerEngine.setCallbacks({
     state.detectedCents = 0;
     state.detectedFreq  = 0;
     tunerUi.updateTunerDisplay(null, 0, 0);
+    if (state.trainingActive) training.setSilence(true);
+    if (intervalTrainer.isPlaying()) intervalTrainer.setSilence(true);
     if (!state.trainingActive) {
       fretboard.renderScale(state);
     }
@@ -136,9 +141,10 @@ function buildRootNoteGrid() {
   if (!grid) return;
   grid.innerHTML = '';
   NOTES.forEach(note => {
+    const display = noteToDisplay(note, state.notation);
     const btn = document.createElement('button');
     btn.className = 'note-btn' + (note === state.rootNote ? ' active' : '');
-    btn.textContent = note;
+    btn.textContent = display;
     btn.dataset.note = note;
     btn.addEventListener('click', () => {
       state.rootNote = note;
@@ -295,13 +301,16 @@ function setupTrainingCallbacks() {
       trainingUi.renderCountdown(n);
     },
     onStart(target) {
-      currentTrainingTarget = target; // store for string tracking
+      currentTrainingTarget = target;
       fretboard.highlightTarget(target.note);
-      trainingUi.renderStart(target);
+      const display = { ...target, note: noteToDisplay(target.note, state.notation) };
+      trainingUi.renderStart(display);
     },
-    onCorrect({ note, points, streak, score }) {
+    onCorrect({ note, points, streak, score, reactionMs }) {
       trainingUi.renderCorrect({ points, streak, score });
+      if (reactionMs) trainingUi.showSpeed(reactionMs);
       synth.playFeedback(true);
+      trainingUi.showSilenceMessage('Suelta la cuerda...');
       addPointsWithToast(10, 'training', 'Nota correcta');
       if (currentTrainingTarget && currentTrainingTarget.string !== undefined) {
         achievements.recordTrainingResult({ correct: true, stringsHit: [currentTrainingTarget.string] });
@@ -310,6 +319,7 @@ function setupTrainingCallbacks() {
     onWrong({ expected, played, streak, score }) {
       trainingUi.renderWrong({ expected, played, streak, score });
       synth.playFeedback(false);
+      trainingUi.showSilenceMessage('Suelta la cuerda...');
     },
     onFinish(results) {
       stats.recordSession({
@@ -322,6 +332,8 @@ function setupTrainingCallbacks() {
         wrong: results.wrong,
         maxStreak: results.maxStreak,
         total: results.total,
+        avgReactionMs: results.avgReactionMs || 0,
+        fastestMs: results.fastestMs || 0,
       });
       achievements.recordTrainingResult({ maxStreak: results.maxStreak });
       achievements.checkAchievements();
@@ -353,7 +365,8 @@ async function startTraining() {
     setMicUI(true);
   }
 
-  const started = training.startTraining({ ...state });
+  const rounds = parseInt($('#trainingRounds').value) || 10;
+  const started = training.startTraining({ ...state }, rounds);
   if (started) {
     state.trainingActive = true;
     achievements.recordSource('training');
@@ -411,6 +424,8 @@ export function init() {
   state.fretTo        = saved.maxFret;
   state.volume        = saved.synthVolume;
   state.tuning        = saved.tuning;
+  state.notation       = saved.notation || 'english';
+  updateNotationUI();
   state.customTuningNotes = saved.customTuningNotes || ['E', 'A', 'D', 'G'];
 
   if (saved.dailyGoalMinutes) {
@@ -565,6 +580,25 @@ export function init() {
     setTheme(!state.darkMode);
     autoSave();
   });
+
+  $('#notationToggle').addEventListener('click', () => {
+    state.notation = state.notation === 'spanish' ? 'english' : 'spanish';
+    updateNotationUI();
+    fretboard.renderScale(state);
+    buildRootNoteGrid();
+    autoSave();
+  });
+
+  function updateNotationUI() {
+    const btn = $('#notationToggle');
+    if (btn) {
+      const span = btn.querySelector('span');
+      if (span) {
+        span.textContent = state.notation === 'spanish' ? 'Do' : 'C';
+      }
+      btn.title = state.notation === 'spanish' ? 'Notación: española (Do Re Mi)' : 'Notación: inglesa (C D E)';
+    }
+  }
 
   $('#trainingStart').addEventListener('click', () => {
     if (state.trainingActive) {
@@ -793,7 +827,7 @@ export function init() {
 
     if (step.mode === 'training') {
       stepModeActive = 'training';
-      training.startTraining({ ...state });
+      training.startTraining({ ...state }, 10);
       achievements.recordSource('training');
       practiceTime.start('training');
       state.trainingActive = true;
@@ -920,23 +954,29 @@ export function init() {
       itUi.renderPlaying(mode);
     },
     onRound({ root, interval, mode }) {
-      itUi.showRound(root, interval, mode);
+      itUi.showRound(noteToDisplay(root, state.notation), interval, mode);
     },
-    onCorrect({ points, streak, score, interval }) {
+    onCorrect({ points, streak, score, interval, reactionMs }) {
       itUi.updateScore(score, streak);
       itUi.showCorrect(interval, points);
+      if (reactionMs) itUi.showSpeed(reactionMs);
+      if (intervalTrainer.getState().mode === 'play') itUi.showSilenceMessage('Silencia la nota...');
       addPointsWithToast(12, 'interval', 'Intervalo correcto');
       if (interval) {
         achievements.recordIntervalResult({ typesHit: [interval.name] });
       }
     },
-    onWrong({ interval }) {
-      itUi.showWrong(interval);
+    onWrong({ played, expected, interval }) {
+      const p = played ? noteToDisplay(played, state.notation) : null;
+      const e = expected ? noteToDisplay(expected, state.notation) : null;
+      itUi.showWrong(interval, p, e);
       itUi.updateScore(intervalTrainer.getState().score, 0);
+      if (intervalTrainer.getState().mode === 'play') itUi.showSilenceMessage('Silencia la nota...');
     },
     onSkip({ interval }) {
       itUi.showSkip(interval);
       itUi.updateScore(intervalTrainer.getState().score, 0);
+      if (intervalTrainer.getState().mode === 'play') itUi.showSilenceMessage('Silencia la nota...');
     },
     onFinish(results) {
       stats.recordFlashcards(results);

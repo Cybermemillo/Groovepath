@@ -4,11 +4,13 @@ import {
   NUM_FRETS, NUM_STRINGS,
 } from './constants.js';
 import { midiToNote, getScaleNotes, getArpeggioNotes } from './theory.js';
+import { noteToDisplay } from './constants.js';
 import { showTooltip, hideTooltip } from './tooltip.js';
 import * as synth from './synth.js';
 import { $ } from '../utils/dom.js';
 
 let dotsCache = [];
+let targetNote = null;
 
 export function buildFretboard(state) {
   const board = $('#fretboard');
@@ -75,7 +77,10 @@ export function buildFretboard(state) {
         cell.appendChild(dot);
       }
 
-      cell.addEventListener('mouseenter', (e) => showTooltip(e, noteName, octave));
+      cell.addEventListener('mouseenter', (e) => {
+        const n = noteToDisplay(noteName, state.notation || 'english');
+        showTooltip(e, n, octave);
+      });
       cell.addEventListener('mouseleave', hideTooltip);
 
       if (f > 0) {
@@ -120,6 +125,7 @@ export function renderScale(state) {
   const fretFrom     = state.fretFrom;
   const fretTo       = state.fretTo;
   const soloArpeggio = state.soloArpeggio;
+  const notation     = state.notation || 'english';
 
   dotsCache.forEach(dot => {
     const note     = dot.dataset.dotNote;
@@ -141,7 +147,7 @@ export function renderScale(state) {
     if (textSpan) {
       textSpan.textContent = isArpeggio
         ? arpeggio.degrees[note]
-        : (showNames ? note : '');
+        : (showNames ? noteToDisplay(note, notation) : '');
     }
 
     const isRoot     = note === rootNote;
@@ -161,6 +167,7 @@ export function renderScale(state) {
     }
 
     dot.className = cls;
+    if (targetNote && note === targetNote) dot.classList.add('target');
   });
 }
 
@@ -181,6 +188,7 @@ export function applyFretRange(state) {
 
 export function highlightTarget(note) {
   clearTarget();
+  targetNote = note;
   dotsCache.forEach(dot => {
     if (dot.dataset.dotNote === note) {
       dot.classList.add('target');
@@ -189,5 +197,6 @@ export function highlightTarget(note) {
 }
 
 export function clearTarget() {
+  targetNote = null;
   dotsCache.forEach(dot => dot.classList.remove('target'));
 }

@@ -10,6 +10,8 @@ const choicesEl    = $('#itChoices');
 const roundsSel    = $('#itRounds');
 const resultsEl    = $('#itResults');
 const configWrap   = $('#itConfig');
+const silenceEl    = $('#itSilence');
+const speedEl      = $('#itSpeed');
 
 const INTERVAL_BTNS = [
   { name: '2m', label: '2m' },
@@ -69,6 +71,8 @@ export function renderIdle() {
   resultsEl.style.display = 'none';
   resultsEl.innerHTML = '';
   configWrap.style.display = '';
+  if (silenceEl) silenceEl.style.display = 'none';
+  if (speedEl) speedEl.textContent = '\u2014';
 }
 
 export function renderPlaying(mode) {
@@ -83,11 +87,13 @@ export function renderPlaying(mode) {
   } else {
     choicesEl.style.display = 'none';
   }
+  if (speedEl) speedEl.textContent = '\u2014';
 }
 
 export function showRound(root, interval, mode) {
   targetEl.textContent = root + ' \u2192 ?';
   feedbackEl.style.display = 'none';
+  if (silenceEl) silenceEl.style.display = 'none';
   if (mode === 'play') {
     targetEl.textContent = 'Toca ' + interval.label + ' desde ' + root;
   }
@@ -105,9 +111,13 @@ export function showCorrect(interval, points) {
   targetEl.textContent = interval.label;
 }
 
-export function showWrong(interval) {
+export function showWrong(interval, played, expected) {
   feedbackEl.style.display = 'block';
-  feedbackEl.textContent = '\u2717 Era ' + interval.label;
+  if (played && expected) {
+    feedbackEl.innerHTML = '\u2717 Tocada: <strong>' + played + '</strong> &rarr; Era: <strong>' + expected + '</strong> (' + interval.label + ')';
+  } else {
+    feedbackEl.textContent = '\u2717 Era ' + interval.label;
+  }
   feedbackEl.className = 'it-feedback wrong';
   targetEl.textContent = interval.label;
 }
@@ -119,18 +129,40 @@ export function showSkip(interval) {
   targetEl.textContent = interval.label;
 }
 
+export function showSpeed(ms) {
+  if (speedEl) {
+    speedEl.textContent = (ms / 1000).toFixed(1) + 's';
+    if (ms < 1500) speedEl.style.color = '#4caf50';
+    else if (ms < 3000) speedEl.style.color = '#ffcc00';
+    else speedEl.style.color = '';
+  }
+}
+
 export function showResults(results) {
   resultsEl.style.display = 'block';
+  if (silenceEl) silenceEl.style.display = 'none';
+  const avgSpeed = results.avgReactionMs > 0 ? (results.avgReactionMs / 1000).toFixed(1) + 's' : '—';
+  const fastest = results.fastestMs > 0 ? (results.fastestMs / 1000).toFixed(1) + 's' : '—';
   resultsEl.innerHTML =
     '<div class="it-results-title">Resultados</div>' +
     '<div class="it-results-grid">' +
       '<div class="it-res-card"><span class="it-res-val">' + results.score + '</span><span>Puntos</span></div>' +
       '<div class="it-res-card"><span class="it-res-val">' + results.correct + '/' + (results.correct + results.wrong) + '</span><span>Aciertos</span></div>' +
       '<div class="it-res-card"><span class="it-res-val">' + results.maxStreak + '</span><span>Mejor racha</span></div>' +
+      '<div class="it-res-card"><span class="it-res-val">' + avgSpeed + '</span><span>Velocidad media</span></div>' +
+      '<div class="it-res-card"><span class="it-res-val">' + fastest + '</span><span>Más rápido</span></div>' +
     '</div>';
   targetEl.textContent = '\u2014';
   startBtn.textContent = 'Empezar intervalos';
   startBtn.classList.remove('active');
   configWrap.style.display = '';
   choicesEl.style.display = 'none';
+  if (speedEl) speedEl.textContent = '\u2014';
+}
+
+export function showSilenceMessage(text) {
+  if (silenceEl) {
+    silenceEl.textContent = text || 'Silencia la nota...';
+    silenceEl.style.display = 'block';
+  }
 }

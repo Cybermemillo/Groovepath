@@ -1,4 +1,5 @@
 import { $ } from '../utils/dom.js';
+import { noteToDisplay } from './constants.js';
 
 const detectedNoteEl = $('#detectedNote');
 const detectedOctave = $('#detectedOctave');
@@ -34,7 +35,7 @@ export function clearMicError() {
   micErrorText.textContent = '';
 }
 
-export function updateTunerDisplay(note, freq, cents, midi = null) {
+export function updateTunerDisplay(note, freq, cents, midi = null, notation = 'english') {
   if (!note) {
     detectedNoteEl.textContent = '\u2014';
     detectedOctave.textContent = '';
@@ -68,7 +69,7 @@ export function updateTunerDisplay(note, freq, cents, midi = null) {
   }
 
   const octave = midi !== null ? Math.floor(midi / 12) - 1 : '';
-  detectedNoteEl.textContent = note;
+  detectedNoteEl.textContent = noteToDisplay(note, notation);
   detectedOctave.textContent = `oct. ${octave}`;
   tunerFreqEl.textContent    = `${smoothFreq.toFixed(1)} Hz`;
 

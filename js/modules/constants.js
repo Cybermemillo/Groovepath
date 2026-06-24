@@ -1,5 +1,20 @@
 export const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
+export const SPANISH_NOTES = {
+  'C': 'Do', 'C#': 'Do#', 'Db': 'Reb',
+  'D': 'Re', 'D#': 'Re#', 'Eb': 'Mib',
+  'E': 'Mi',
+  'F': 'Fa', 'F#': 'Fa#', 'Gb': 'Solb',
+  'G': 'Sol', 'G#': 'Sol#', 'Ab': 'Lab',
+  'A': 'La', 'A#': 'La#', 'Bb': 'Sib',
+  'B': 'Si',
+};
+
+export function noteToDisplay(note, notation) {
+  if (!note || notation !== 'spanish') return note;
+  return SPANISH_NOTES[note] || note;
+}
+
 export const ENHARMONICS = {
   'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb'
 };
@@ -15,6 +30,7 @@ export const SCALES = {
   phrygian:         [0, 1, 3, 5, 7, 8, 10],
   lydian:           [0, 2, 4, 6, 7, 9, 11],
   locrian:          [0, 1, 3, 5, 6, 8, 10],
+  chromatic:        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
 };
 
 export const TUNINGS = {

@@ -33,6 +33,11 @@ let state = {
 
 let callbacks = {};
 let synthTimer = null;
+let awaitingSilence = false;
+let roundStartTime = 0;
+let totalReactionMs = 0;
+let fastestMs = 0;
+let minAdvanceTime = 0;
 
 export function setCallbacks(cbs) { callbacks = cbs; }
 
@@ -57,11 +62,16 @@ export function start() {
   state.maxStreak = 0;
   state.correct = 0;
   state.wrong = 0;
+  awaitingSilence = false;
+  totalReactionMs = 0;
+  fastestMs = 0;
   if (callbacks.onStart) callbacks.onStart();
   nextRound();
 }
 
 function nextRound() {
+  awaitingSilence = false;
+  roundStartTime = performance.now();
   if (!state.playing) return;
   if (state.totalRounds > 0 && state.round >= state.totalRounds) {
     finish();
@@ -72,33 +82,31 @@ function nextRound() {
   state.currentInterval = interval;
   state.round++;
 
-  const rootMidi = 40 + noteIndex(root); // roughly E2 octave
+  const rootMidi = 40 + noteIndex(root);
   const targetMidi = rootMidi + interval.semitones;
   const targetNote = midiToNote(targetMidi);
 
   if (callbacks.onRound) callbacks.onRound({ root, interval, mode: state.mode });
 
   if (state.mode === 'choose') {
-    // Play root, then target after delay
     synth.playNote(rootMidi, 600);
     synthTimer = setTimeout(() => {
       synth.playNote(targetMidi, 600);
     }, 1200);
   } else {
-    // Play mode: just play root
     synth.playNote(rootMidi, 600);
   }
 }
 
 export function answerInterval(intervalName) {
-  if (!state.playing || state.mode !== 'choose') return;
+  if (!state.playing || state.mode !== 'choose' || awaitingSilence) return;
   if (synthTimer) clearTimeout(synthTimer);
   const correct = state.currentInterval && (state.currentInterval.name === intervalName);
   evaluate(correct, null, intervalName);
 }
 
 export function evaluatePitch(noteName) {
-  if (!state.playing || state.mode !== 'play') return;
+  if (!state.playing || state.mode !== 'play' || awaitingSilence) return;
   const rootIdx = noteIndex(state.currentRoot);
   const targetIdx = (rootIdx + state.currentInterval.semitones) % 12;
   const expected = NOTES[targetIdx];
@@ -107,20 +115,29 @@ export function evaluatePitch(noteName) {
 }
 
 function evaluate(correct, played, expected) {
+  const reactionMs = Math.round(performance.now() - roundStartTime);
   if (correct) {
     state.correct++;
     state.streak++;
     if (state.streak > state.maxStreak) state.maxStreak = state.streak;
     const points = 100 + (state.streak > 1 ? Math.floor(state.streak / 3) * 10 : 0);
     state.score += points;
-    if (callbacks.onCorrect) callbacks.onCorrect({ points, streak: state.streak, score: state.score, interval: state.currentInterval });
+    totalReactionMs += reactionMs;
+    if (fastestMs === 0 || reactionMs < fastestMs) fastestMs = reactionMs;
+    if (callbacks.onCorrect) callbacks.onCorrect({ points, streak: state.streak, score: state.score, interval: state.currentInterval, reactionMs });
   } else {
     state.wrong++;
     state.streak = 0;
     if (callbacks.onWrong) callbacks.onWrong({ played, expected, interval: state.currentInterval });
   }
   synth.playFeedback(correct);
-  setTimeout(nextRound, correct ? 800 : 1500);
+
+  if (state.mode === 'choose') {
+    setTimeout(nextRound, correct ? 800 : 2800);
+  } else {
+    awaitingSilence = true;
+    minAdvanceTime = performance.now() + (correct ? 800 : 2500);
+  }
 }
 
 export function skipRound() {
@@ -129,33 +146,62 @@ export function skipRound() {
   state.wrong++;
   state.streak = 0;
   if (callbacks.onSkip) callbacks.onSkip({ interval: state.currentInterval });
-  setTimeout(nextRound, 800);
+  if (state.mode === 'choose') {
+    setTimeout(nextRound, 800);
+  } else {
+    awaitingSilence = true;
+    minAdvanceTime = performance.now() + 2500;
+  }
+}
+
+export function setSilence(isSilent) {
+  if (!awaitingSilence || !isSilent || !state.playing) return;
+  const now = performance.now();
+  if (now >= minAdvanceTime) {
+    nextRound();
+  } else {
+    setTimeout(nextRound, minAdvanceTime - now);
+  }
 }
 
 function finish() {
   state.playing = false;
+  awaitingSilence = false;
   if (synthTimer) clearTimeout(synthTimer);
+  const avgMs = state.correct > 0 ? Math.round(totalReactionMs / state.correct) : 0;
   const results = {
     score: state.score,
     correct: state.correct,
     wrong: state.wrong,
     maxStreak: state.maxStreak,
     rounds: state.round - 1,
+    avgReactionMs: avgMs,
+    fastestMs,
   };
   if (callbacks.onFinish) callbacks.onFinish(results);
+  totalReactionMs = 0;
+  fastestMs = 0;
 }
 
 export function stop() {
   state.playing = false;
+  awaitingSilence = false;
   if (synthTimer) clearTimeout(synthTimer);
-  return {
+  const avgMs = state.correct > 0 ? Math.round(totalReactionMs / state.correct) : 0;
+  const r = {
     score: state.score,
     correct: state.correct,
     wrong: state.wrong,
     maxStreak: state.maxStreak,
     rounds: state.round - 1,
+    avgReactionMs: avgMs,
+    fastestMs,
   };
+  totalReactionMs = 0;
+  fastestMs = 0;
+  return r;
 }
 
 export function isPlaying() { return state.playing; }
 export function getState() { return { ...state }; }
+export function isAwaitingSilence() { return awaitingSilence; }

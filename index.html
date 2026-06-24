@@ -31,6 +31,9 @@
         <span class="volume-label">Volumen</span>
         <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5" title="Volumen" aria-label="Volumen" />
         <button id="helpBtn" class="btn-icon help-btn" title="Ayuda" aria-label="Ayuda">?</button>
+        <button id="notationToggle" class="btn-icon" title="Notación: inglesa / española" aria-label="Cambiar notación">
+          <span style="font-size:0.8rem;font-weight:600;">Do</span>
+        </button>
         <button id="themeToggle" class="btn-icon" title="Cambiar tema" aria-label="Cambiar tema">
           <svg id="themeIconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -74,6 +77,7 @@
           <option value="phrygian">Frigia</option>
           <option value="lydian">Lidia</option>
           <option value="locrian">Locria</option>
+          <option value="chromatic">Todas las notas (cromática)</option>
         </select>
       </div>
 
@@ -313,11 +317,23 @@
           <span class="stat-label">Racha</span>
           <span class="stat-value" id="trainingStreak">0</span>
         </div>
+        <div class="stat-item">
+          <span class="stat-label">Velocidad</span>
+          <span class="stat-value" id="trainingSpeed">—</span>
+        </div>
       </div>
       <div class="training-feedback" id="trainingFeedback">
         <span id="feedbackText"></span>
       </div>
+      <div class="training-silence" id="trainingSilence" style="display:none">Suelta la cuerda...</div>
       <div class="training-actions">
+        <select id="trainingRounds" class="it-select">
+          <option value="10">10 notas</option>
+          <option value="20">20 notas</option>
+          <option value="30" selected>30 notas</option>
+          <option value="50">50 notas</option>
+          <option value="0">Sin l&iacute;mite</option>
+        </select>
         <button id="trainingStart" class="btn-training">Empezar entrenamiento</button>
       </div>
       <div class="training-results" id="trainingResults"></div>
@@ -352,8 +368,13 @@
             <span class="it-stat-label">Racha</span>
             <span id="itStreak">0</span>
           </div>
+          <div class="it-stat-item">
+            <span class="it-stat-label">Velocidad</span>
+            <span id="itSpeed">—</span>
+          </div>
         </div>
         <div class="it-feedback" id="itFeedback" style="display:none"></div>
+        <div class="it-silence" id="itSilence" style="display:none">Silencia la nota...</div>
         <div class="it-choices" id="itChoices" style="display:none"></div>
         <div class="it-actions">
           <button id="itStart" class="btn-training">Empezar intervalos</button>
