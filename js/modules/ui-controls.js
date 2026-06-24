@@ -19,6 +19,11 @@ import * as metroUi from './metronome-ui.js';
 import * as practiceTime from './practice-time.js';
 import * as routines from './routines.js';
 import * as routinesUi from './routines-ui.js';
+import * as intervalTrainer from './interval-trainer.js';
+import * as itUi from './interval-trainer-ui.js';
+import * as achievements from './achievements.js';
+import * as eastereggs from './eastereggs.js';
+import { addPointsWithToast } from './achievements-ui.js';
 import { initTooltip } from './tooltip.js';
 import { initHelpModal } from './help-modal.js';
 import { loadSettings, saveSettings } from './settings.js';
@@ -82,13 +87,22 @@ tunerEngine.setCallbacks({
     state.detectedCents = cents;
     tunerUi.updateTunerDisplay(note, freq, cents, midi);
 
+    eastereggs.onNoteDetected(midi, state.customTuningMidi);
+    const si = findStringFret(midi, state.customTuningMidi);
+    if (si) {
+      achievements.recordTunerPitch({ stringIndex: si.string, fret: si.fret });
+    }
+
     if (state.trainingActive) {
       training.evaluatePitch(note, cents);
     }
     if (state.improvisationActive) {
       improvisation.evaluatePitch(note, cents);
     }
-    if (!state.trainingActive && !state.improvisationActive && changed) {
+    if (intervalTrainer.isPlaying()) {
+      intervalTrainer.evaluatePitch(note);
+    }
+    if (!state.trainingActive && !state.improvisationActive && !intervalTrainer.isPlaying() && changed) {
       fretboard.renderScale(state);
     }
   },
@@ -265,18 +279,33 @@ function buildCustomTuning() {
 /* ─── Training ─── */
 let audioEl = null; // uploaded file reference
 
+function findStringFret(midi, tuningMidi) {
+  for (let s = 0; s < tuningMidi.length; s++) {
+    const f = midi - tuningMidi[s];
+    if (f >= 0 && f <= 24) return { string: s, fret: f };
+  }
+  return null;
+}
+
+let currentTrainingTarget = null; // { note, midi, string, fret } for achievement tracking
+
 function setupTrainingCallbacks() {
   training.setCallbacks({
     onCountdown(n) {
       trainingUi.renderCountdown(n);
     },
     onStart(target) {
+      currentTrainingTarget = target; // store for string tracking
       fretboard.highlightTarget(target.note);
       trainingUi.renderStart(target);
     },
     onCorrect({ note, points, streak, score }) {
       trainingUi.renderCorrect({ points, streak, score });
       synth.playFeedback(true);
+      addPointsWithToast(10, 'training', 'Nota correcta');
+      if (currentTrainingTarget && currentTrainingTarget.string !== undefined) {
+        achievements.recordTrainingResult({ correct: true, stringsHit: [currentTrainingTarget.string] });
+      }
     },
     onWrong({ expected, played, streak, score }) {
       trainingUi.renderWrong({ expected, played, streak, score });
@@ -294,11 +323,14 @@ function setupTrainingCallbacks() {
         maxStreak: results.maxStreak,
         total: results.total,
       });
+      achievements.recordTrainingResult({ maxStreak: results.maxStreak });
+      achievements.checkAchievements();
       statsUi.render();
       populateStatsFilter();
       trainingUi.renderResults(results);
       fretboard.clearTarget();
       state.trainingActive = false;
+      currentTrainingTarget = null;
     },
     onError(msg) {
       trainingUi.showError(msg);
@@ -324,6 +356,7 @@ async function startTraining() {
   const started = training.startTraining({ ...state });
   if (started) {
     state.trainingActive = true;
+    achievements.recordSource('training');
     practiceTime.start('training');
   }
 }
@@ -331,6 +364,10 @@ async function startTraining() {
 function stopTraining() {
   const results = training.stopTraining();
   practiceTime.stop('training');
+  if (results && results.maxStreak) {
+    achievements.recordTrainingResult({ maxStreak: results.maxStreak });
+  }
+  achievements.checkAchievements();
   statsUi.render();
   fretboard.clearTarget();
   if (results) {
@@ -339,6 +376,7 @@ function stopTraining() {
     trainingUi.renderIdle();
   }
   state.trainingActive = false;
+  currentTrainingTarget = null;
 }
 
 function populateStatsFilter() {
@@ -547,13 +585,26 @@ export function init() {
       }
       if (state.improvisationActive) {
         const results = improvisation.stop();
-        practiceTime.stop('improvisation');
+        const elapsed = practiceTime.stop('improvisation');
+        const mins = Math.floor(elapsed / 60);
+        if (mins > 0) addPointsWithToast(mins * 8, 'improvisation', mins + ' min improvisación');
         if (results) {
           stats.recordImprovisation(results);
           statsUi.render();
           populateStatsFilter();
         }
         improUi.renderIdle();
+      }
+      if (intervalTrainer.isPlaying()) {
+        const results = intervalTrainer.stop();
+        if (results && results.rounds > 0) {
+          stats.recordFlashcards(results);
+          achievements.recordIntervalResult({ maxStreak: results.maxStreak });
+          achievements.checkAchievements();
+          statsUi.render();
+          populateStatsFilter();
+        }
+        itUi.renderIdle();
       }
       fretboard.renderScale(state);
     } else {
@@ -603,18 +654,24 @@ export function init() {
         audioEl.pause();
         state.backingActive = false;
         backingUi.setPlayIcon(false);
-        practiceTime.stop('backing');
+        const elapsed = practiceTime.stop('backing');
+        const mins = Math.floor(elapsed / 60);
+        if (mins > 0) addPointsWithToast(mins * 4, 'backing', mins + ' min pista');
       }
       return;
     }
     if (backing.isPlaying()) {
       backing.stop();
-      practiceTime.stop('backing');
+      const bElapsed = practiceTime.stop('backing');
+      const bMins = Math.floor(bElapsed / 60);
+      if (bMins > 0) addPointsWithToast(bMins * 4, 'backing', bMins + ' min pista');
       state.backingActive = false;
       backingUi.setPlayIcon(false);
       if (state.improvisationActive) {
         const results = improvisation.stop();
-        practiceTime.stop('improvisation');
+        const iElapsed = practiceTime.stop('improvisation');
+        const iMins = Math.floor(iElapsed / 60);
+        if (iMins > 0) addPointsWithToast(iMins * 8, 'improvisation', iMins + ' min improvisación');
         if (results) {
           stats.recordImprovisation(results);
           statsUi.render();
@@ -629,6 +686,7 @@ export function init() {
       state.backingActive = true;
       backing.setRootScale(state.rootNote, state.scaleType);
       backing.start();
+      achievements.recordSource('backing');
       practiceTime.start('backing');
       backingUi.setPlayIcon(true);
       if (state.improvisationActive) {
@@ -655,9 +713,12 @@ export function init() {
   metroUi.onPlay(() => {
     if (metronome.isPlaying()) {
       metronome.stop();
-      practiceTime.stop('metronome');
+      const elapsed = practiceTime.stop('metronome');
+      const mins = Math.floor(elapsed / 60);
+      if (mins > 0) addPointsWithToast(mins * 4, 'metronome', mins + ' min metrónomo');
     } else {
       metronome.start();
+      achievements.recordSource('metronome');
       practiceTime.start('metronome');
     }
     metroUi.render(metronome.getState());
@@ -714,6 +775,7 @@ export function init() {
 
     if (step.metronome && !metronome.isPlaying()) {
       metronome.start();
+      achievements.recordSource('metronome');
       practiceTime.start('metronome');
       metroUi.render(metronome.getState());
     }
@@ -723,6 +785,7 @@ export function init() {
       backing.setBpm(step.bpm || 100);
       backing.setRootScale(state.rootNote, state.scaleType);
       backing.start();
+      achievements.recordSource('backing');
       practiceTime.start('backing');
       backingUi.setPlayIcon(true);
       backingUi.render(backing.getState());
@@ -731,11 +794,13 @@ export function init() {
     if (step.mode === 'training') {
       stepModeActive = 'training';
       training.startTraining({ ...state });
+      achievements.recordSource('training');
       practiceTime.start('training');
       state.trainingActive = true;
     } else if (step.mode === 'improvisation') {
       stepModeActive = 'improvisation';
       improvisation.start(state.rootNote, state.scaleType);
+      achievements.recordSource('improvisation');
       practiceTime.start('improvisation');
       state.improvisationActive = true;
       improUi.renderActive(step.backingStyle || '—');
@@ -752,19 +817,25 @@ export function init() {
     }
     if (state.improvisationActive) {
       improvisation.stop();
-      practiceTime.stop('improvisation');
+      const elapsed = practiceTime.stop('improvisation');
+      const mins = Math.floor(elapsed / 60);
+      if (mins > 0) addPointsWithToast(mins * 8, 'improvisation', mins + ' min improvisación');
       improUi.renderIdle();
       state.improvisationActive = false;
     }
     if (backing.isPlaying()) {
       backing.stop();
-      practiceTime.stop('backing');
+      const bElapsed = practiceTime.stop('backing');
+      const bMins = Math.floor(bElapsed / 60);
+      if (bMins > 0) addPointsWithToast(bMins * 4, 'backing', bMins + ' min pista');
       backingUi.setPlayIcon(false);
       state.backingActive = false;
     }
     if (metronome.isPlaying() && !routines.isPlaying()) {
       metronome.stop();
-      practiceTime.stop('metronome');
+      const mElapsed = practiceTime.stop('metronome');
+      const mMins = Math.floor(mElapsed / 60);
+      if (mMins > 0) addPointsWithToast(mMins * 4, 'metronome', mMins + ' min metrónomo');
       metroUi.render(metronome.getState());
     }
   }
@@ -827,18 +898,98 @@ export function init() {
     onResumed() {
       routinesUi.setPlayerButtons(true, false);
     },
-    onFinish({ totalTime, stepsCompleted }) {
+    onFinish({ totalTime, stepsCompleted, builtin }) {
       stopModes();
+      const pts = builtin ? 75 : 125;
+      addPointsWithToast(pts, 'routine', builtin ? 'Rutina predefinida completada' : 'Rutina personalizada completada');
+      achievements.recordRoutineCompleted({ isBuiltin: !!builtin, duration: totalTime, date: new Date().toISOString() });
+      achievements.checkAchievements();
       routinesUi.showPlayerResults(totalTime, stepsCompleted);
       routinesUi.setPlayerButtons(false, false);
       fretboard.renderScale(state);
     },
   });
 
+  /* ─── Interval trainer ─── */
+  itUi.init();
+
+  intervalTrainer.setCallbacks({
+    onStart() {
+      const mode = state.micActive ? 'play' : 'choose';
+      intervalTrainer.setMode(mode);
+      itUi.renderPlaying(mode);
+    },
+    onRound({ root, interval, mode }) {
+      itUi.showRound(root, interval, mode);
+    },
+    onCorrect({ points, streak, score, interval }) {
+      itUi.updateScore(score, streak);
+      itUi.showCorrect(interval, points);
+      addPointsWithToast(12, 'interval', 'Intervalo correcto');
+      if (interval) {
+        achievements.recordIntervalResult({ typesHit: [interval.name] });
+      }
+    },
+    onWrong({ interval }) {
+      itUi.showWrong(interval);
+      itUi.updateScore(intervalTrainer.getState().score, 0);
+    },
+    onSkip({ interval }) {
+      itUi.showSkip(interval);
+      itUi.updateScore(intervalTrainer.getState().score, 0);
+    },
+    onFinish(results) {
+      stats.recordFlashcards(results);
+      achievements.recordIntervalResult({ maxStreak: results.maxStreak });
+      achievements.checkAchievements();
+      statsUi.render();
+      populateStatsFilter();
+      itUi.showResults(results);
+    },
+  });
+
+  itUi.onStart(async () => {
+    if (intervalTrainer.isPlaying()) {
+      const results = intervalTrainer.stop();
+      if (results && results.rounds > 0) {
+        stats.recordFlashcards(results);
+        achievements.recordIntervalResult({ maxStreak: results.maxStreak });
+        achievements.checkAchievements();
+        statsUi.render();
+        populateStatsFilter();
+      }
+      itUi.renderIdle();
+      return;
+    }
+
+    if (!state.micActive) {
+      intervalTrainer.setMode('choose');
+    } else {
+      intervalTrainer.setMode('play');
+    }
+
+    const settings = itUi.getSettings();
+    intervalTrainer.setSettings(settings);
+    intervalTrainer.start();
+    achievements.recordSource('intervals');
+  });
+
+  itUi.onAnswer((name) => {
+    intervalTrainer.answerInterval(name);
+  });
+
+  itUi.onSkip(() => {
+    intervalTrainer.skipRound();
+  });
+
   backingUi.bindStyleButtons((style) => {
     if (style === 'upload') {
-      practiceTime.stop('improvisation');
-      practiceTime.stop('backing');
+      const iElapsed = practiceTime.stop('improvisation');
+      const iMins = Math.floor(iElapsed / 60);
+      if (iMins > 0) addPointsWithToast(iMins * 8, 'improvisation', iMins + ' min improvisación');
+      const bElapsed = practiceTime.stop('backing');
+      const bMins = Math.floor(bElapsed / 60);
+      if (bMins > 0) addPointsWithToast(bMins * 4, 'backing', bMins + ' min pista');
       if (improvisation.isActive()) { improvisation.stop(); improUi.renderIdle(); }
       if (audioEl) {
         backing.stop();
@@ -852,9 +1003,12 @@ export function init() {
       }
       return;
     }
-    practiceTime.stop('improvisation');
-    practiceTime.stop('backing');
-    if (improvisation.isActive()) { improvisation.stop(); improUi.renderIdle(); }
+    const iElapsed2 = practiceTime.stop('improvisation');
+    const iMins2 = Math.floor(iElapsed2 / 60);
+    if (iMins2 > 0) addPointsWithToast(iMins2 * 8, 'improvisation', iMins2 + ' min improvisación');
+    const bElapsed2 = practiceTime.stop('backing');
+    const bMins2 = Math.floor(bElapsed2 / 60);
+    if (bMins2 > 0) addPointsWithToast(bMins2 * 4, 'backing', bMins2 + ' min pista');
     if (audioEl) { audioEl.pause(); audioEl = null; }
     state.audioMode = 'generated';
     backing.stop();
@@ -872,12 +1026,18 @@ export function init() {
   backingUi.onFileChange((files) => {
     if (!files || !files[0]) return;
     backing.stop();
-    practiceTime.stop('backing');
-    practiceTime.stop('improvisation');
+    const bElapsed3 = practiceTime.stop('backing');
+    const bMins3 = Math.floor(bElapsed3 / 60);
+    if (bMins3 > 0) addPointsWithToast(bMins3 * 4, 'backing', bMins3 + ' min pista');
+    const iElapsed3 = practiceTime.stop('improvisation');
+    const iMins3 = Math.floor(iElapsed3 / 60);
+    if (iMins3 > 0) addPointsWithToast(iMins3 * 8, 'improvisation', iMins3 + ' min improvisación');
     if (improvisation.isActive()) { improvisation.stop(); improUi.renderIdle(); }
     if (audioEl) { audioEl.pause(); audioEl = null; }
     state.backingActive = false;
     backingUi.setPlayIcon(false);
+
+    achievements.recordUploadedTrack();
 
     const file = files[0];
     const btn = $('#trackFile').parentElement.querySelector('.track-file-btn');
@@ -908,6 +1068,7 @@ export function init() {
     if (state.improvisationActive) {
       if (backing.isPlaying()) {
         improvisation.start(state.rootNote, state.scaleType);
+        achievements.recordSource('improvisation');
         practiceTime.start('improvisation');
         improUi.renderActive('—');
       } else {
@@ -916,7 +1077,9 @@ export function init() {
     } else {
       if (improvisation.isActive()) {
         const results = improvisation.stop();
-        practiceTime.stop('improvisation');
+        const iElapsed4 = practiceTime.stop('improvisation');
+        const iMins4 = Math.floor(iElapsed4 / 60);
+        if (iMins4 > 0) addPointsWithToast(iMins4 * 8, 'improvisation', iMins4 + ' min improvisación');
         if (results) {
           stats.recordImprovisation(results);
           statsUi.render();

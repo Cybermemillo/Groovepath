@@ -1,5 +1,6 @@
 import { $ } from '../utils/dom.js';
 import * as routines from './routines.js';
+import { recordRoutineCreated } from './achievements.js';
 
 const panelEl      = $('#routinesPanel');
 const listEl       = $('#routineList');
@@ -159,6 +160,7 @@ editorSave.addEventListener('click', () => {
     routines.updateCustom(routine);
   } else {
     routines.addCustom(routine);
+    recordRoutineCreated();
   }
   editingId = null;
   editorModal.classList.remove('active');

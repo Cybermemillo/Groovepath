@@ -218,9 +218,11 @@ function emitStepStart() {
 }
 
 function finishPlayer() {
+  const builtin = playerState.routine.builtin || false;
   const data = {
     totalTime: Math.floor((Date.now() - playerState.startTime) / 1000),
     stepsCompleted: playerState.totalSteps,
+    builtin,
   };
   stopPlayer();
   if (playerCallbacks.onFinish) playerCallbacks.onFinish(data);

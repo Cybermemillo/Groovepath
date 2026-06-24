@@ -234,14 +234,20 @@ export function render() {
   if (data.recent.length > 0) {
     let histHTML = '<div class="history-title">Historial</div><div class="history-list">';
     data.recent.slice(0, 10).forEach(s => {
-      const mode = s.type === 'improvisation'
-        ? '🎵 Impro ' + s.root + ' ' + (s.scale || '').replace(/_/g, ' ')
-        : (s.arpeggio !== 'none'
-          ? s.root + ' arp ' + (s.arpeggio || '').replace(/_/g, ' ')
-          : s.root + ' ' + (s.scale || '').replace(/_/g, ' '));
-      const timeStr = s.type === 'improvisation' && s.duration
-        ? formatTime(s.duration)
-        : (s.correct || 0) + '/' + (s.total || 10);
+      let mode, timeStr;
+      if (s.type === 'improvisation') {
+        mode = '\uD83C\uDFB5 Impro ' + s.root + ' ' + (s.scale || '').replace(/_/g, ' ');
+        timeStr = s.duration ? formatTime(s.duration) : '—';
+      } else if (s.type === 'flashcards') {
+        mode = '\uD83C\uDCA0 Identifica notas';
+        timeStr = (s.correct || 0) + '/' + (s.total || 10);
+      } else if (s.arpeggio && s.arpeggio !== 'none') {
+        mode = s.root + ' arp ' + (s.arpeggio || '').replace(/_/g, ' ');
+        timeStr = (s.correct || 0) + '/' + (s.total || 10);
+      } else {
+        mode = s.root + ' ' + (s.scale || '').replace(/_/g, ' ');
+        timeStr = (s.correct || 0) + '/' + (s.total || 10);
+      }
       histHTML +=
         '<div class="history-row">' +
           '<span class="hr-date">' + FORMATTER.format(new Date(s.date)) + '</span>' +

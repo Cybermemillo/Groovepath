@@ -2231,6 +2231,161 @@ body {
   margin-top: 0.75rem;
 }
 
+/* ===== INTERVAL TRAINER ===== */
+.it-divider {
+  border-top: 1px solid var(--border);
+  margin: 0.75rem 0 0.5rem;
+}
+.interval-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.it-header { display: flex; align-items: center; gap: 0.5rem; }
+.it-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.it-config-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.it-cfg-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.it-select {
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+.it-select:focus { outline: none; border-color: var(--scale-note); }
+
+.it-mode-info {
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--detected);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.it-target-wrap {
+  text-align: center;
+  padding: 0.2rem 0;
+}
+.it-target {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--scale-note);
+}
+
+.it-stats {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+}
+.it-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-family: 'Rajdhani', sans-serif;
+}
+.it-stat-label {
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.it-stat-item span:last-child {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.it-feedback {
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 2px 12px;
+  border-radius: 999px;
+  align-self: center;
+}
+.it-feedback.correct { color: var(--scale-note); }
+.it-feedback.wrong   { color: var(--accent); }
+
+.it-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+.it-choice-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.it-choice-btn:hover { border-color: var(--scale-note); color: var(--scale-note); }
+.it-choice-btn:active { background: var(--scale-note); color: #0D1A18; border-color: var(--scale-note); }
+
+.it-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.it-results { text-align: center; }
+.it-results-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.it-results-grid {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+.it-res-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+}
+.it-res-val {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--scale-note);
+}
+
 /* ===== METRONOME WIDGET ===== */
 .metronome-widget {
   position: fixed;

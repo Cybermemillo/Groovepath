@@ -46,6 +46,20 @@ export function recordImprovisation(data) {
   saveSessions(sessions);
 }
 
+export function recordFlashcards(data) {
+  const sessions = getSessions();
+  sessions.push({
+    type: 'flashcards',
+    date: new Date().toISOString(),
+    score: data.score,
+    correct: data.correct,
+    wrong: data.wrong,
+    maxStreak: data.maxStreak,
+    total: data.rounds,
+  });
+  saveSessions(sessions);
+}
+
 export function clearStats() {
   localStorage.removeItem(STORAGE_KEY);
 }
@@ -70,7 +84,7 @@ export function getFilters(type) {
   const filters = [];
 
   sessions.forEach(s => {
-    if (s.type === 'improvisation') return;
+    if (s.type !== 'training') return;
     const key = s.arpeggio !== 'none'
       ? `arp:${s.root}|${s.arpeggio}`
       : `${s.root}|${s.scale}`;

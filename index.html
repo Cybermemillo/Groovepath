@@ -7,7 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="./css/achievements.css" />
 </head>
 <body class="dark">
 
@@ -320,6 +322,45 @@
         <button id="trainingStart" class="btn-training">Empezar entrenamiento</button>
       </div>
       <div class="training-results" id="trainingResults"></div>
+
+      <div class="it-divider"></div>
+
+      <div class="interval-section">
+        <div class="it-header">
+          <span class="it-title">Entrenamiento de intervalos</span>
+        </div>
+        <div class="it-config" id="itConfig">
+          <div class="it-config-row">
+            <label class="it-cfg-label">Rondas</label>
+            <select id="itRounds" class="it-select">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="30">30</option>
+              <option value="0">Sin l&iacute;mite</option>
+            </select>
+          </div>
+        </div>
+        <div class="it-mode-info" id="itModeInfo"></div>
+        <div class="it-target-wrap">
+          <span class="it-target" id="itTarget">—</span>
+        </div>
+        <div class="it-stats">
+          <div class="it-stat-item">
+            <span class="it-stat-label">Puntos</span>
+            <span id="itScore">0</span>
+          </div>
+          <div class="it-stat-item">
+            <span class="it-stat-label">Racha</span>
+            <span id="itStreak">0</span>
+          </div>
+        </div>
+        <div class="it-feedback" id="itFeedback" style="display:none"></div>
+        <div class="it-choices" id="itChoices" style="display:none"></div>
+        <div class="it-actions">
+          <button id="itStart" class="btn-training">Empezar intervalos</button>
+        </div>
+        <div class="it-results" id="itResults" style="display:none"></div>
+      </div>
     </section>
 
     <!-- ===== STATS PANEL ===== -->
@@ -489,6 +530,16 @@
           <li><strong>Racha:</strong> aciertos consecutivos. Cada 5 aciertos seguidos aumenta el multiplicador de puntuaci&oacute;n.</li>
           <li>La sesi&oacute;n termina al pulsar el bot&oacute;n de parada o al apagar el micr&oacute;fono.</li>
           <li>Los resultados se guardan autom&aacute;ticamente en <strong>Estad&iacute;sticas</strong>.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>5b. Entrenamiento de intervalos</h3>
+        <p>En la parte inferior del panel de Entrenamiento:</p>
+        <ul>
+          <li><strong>Sin micr&oacute;fono:</strong> la app suena dos notas y debes elegir el intervalo entre los botones (2m, 3M, 5J&hellip;).</li>
+          <li><strong>Con micr&oacute;fono:</strong> la app suena la nota ra&iacute;z y debes <strong>tocar el intervalo</strong> en tu bajo.</li>
+          <li>Intervalos: 2ª menor a octava. Puntuaci&oacute;n y racha como en el resto de modos.</li>
         </ul>
       </section>
 
