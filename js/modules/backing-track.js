@@ -1,5 +1,5 @@
 import { getAudioContext, resumeAudioContext, getMasterNode } from './audio-engine.js';
-import { getChordRoot, noteIndex } from './theory.js';
+import { getChordRoot, noteIndex, getChordNotes } from './theory.js';
 import { NOTES, BACKING_STYLES, PROGRESSIONS } from './constants.js';
 
 let state = {
@@ -39,6 +39,7 @@ export function setStyle(style) {
 
 export function setBpm(bpm) {
   state.bpm = bpm;
+  stepLength = 60 / bpm / 4;
 }
 
 export function setVolume(v) {
@@ -173,24 +174,33 @@ function scheduleStep(step) {
   const prog = PROGRESSIONS[state.style];
   const chordIdx = currentChordIndex % prog.length;
   const degree = prog[chordIdx].degree;
+  const chordType = prog[chordIdx].type || 'power';
   const chordRoot = getChordRoot(state.root, state.scale, degree);
 
   if (barInProg === 0 && btCallbacks.onBarStart) {
-    btCallbacks.onBarStart({ chord: chordRoot });
+    const upcoming = getUpcomingChords(3);
+    btCallbacks.onBarStart({ chord: chordRoot, type: chordType, upcoming });
   }
-
-  const rootIdx = noteIndex(chordRoot);
-  const bassMidi = (12 * 3) + rootIdx + 12;
-  const fifthNote = getChordRoot(state.root, state.scale, Math.min(degree + 4, 6));
-  const fifthIdx = noteIndex(fifthNote);
 
   const now = nextStepTime;
   const v = state.volume;
 
   if (barInProg === 0) {
-    playChordNote((12 * 5) + rootIdx, now, stepLength * stepsPerBar * 0.9, v);
-    playChordNote((12 * 5) + fifthIdx, now, stepLength * stepsPerBar * 0.9, v * 0.8);
+    const chordMidis = getChordNotes(chordRoot, chordType);
+    const rootIdx = noteIndex(chordRoot);
+    const bassMidi = (12 * 3) + rootIdx + 12;
+    const barDuration = stepLength * stepsPerBar;
+
+    chordMidis.forEach((note, i) => {
+      const ni = noteIndex(note);
+      const midi = (12 * 5) + ni;
+      const vol = i === 0 ? v : v * (0.7 - i * 0.1);
+      playChordNote(midi, now, barDuration * 0.9, Math.max(0.3, vol));
+    });
   }
+
+  const rootIdx2 = noteIndex(chordRoot);
+  const bassMidi = (12 * 3) + rootIdx2 + 12;
 
   if (styleDef.kick[barInProg]) playKick(now, v);
   if (styleDef.snare[barInProg]) playSnare(now, v);
@@ -213,6 +223,28 @@ function scheduler() {
   }
 
   schedulerTimer = setTimeout(scheduler, 25);
+}
+
+export function getUpcomingChords(count = 3) {
+  const prog = PROGRESSIONS[state.style];
+  return Array.from({ length: count }, (_, i) => {
+    const idx = (currentChordIndex + i) % prog.length;
+    return {
+      chord: getChordRoot(state.root, state.scale, prog[idx].degree),
+      type: prog[idx].type || 'power',
+    };
+  });
+}
+
+export function getTimelineData() {
+  const prog = PROGRESSIONS[state.style];
+  return {
+    bars: prog.map(p => ({
+      chord: getChordRoot(state.root, state.scale, p.degree),
+      type: p.type || 'power',
+    })),
+    current: currentChordIndex % prog.length,
+  };
 }
 
 export function start() {

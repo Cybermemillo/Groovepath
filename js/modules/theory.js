@@ -24,6 +24,15 @@ export function getArpeggioNotes(root, type) {
   return { notes, degrees: degreeMap };
 }
 
+export function getChordNotes(root, chordType) {
+  if (!chordType || chordType === 'power') {
+    const rootIdx = noteIndex(root);
+    return [root, NOTES[(rootIdx + 7) % 12]];
+  }
+  const arp = getArpeggioNotes(root, chordType);
+  return arp ? arp.notes : [root];
+}
+
 export function getChordRoot(root, scaleType, degree) {
   const notes = getScaleNotes(root, scaleType);
   if (notes.length === 0) return root;

@@ -110,8 +110,8 @@ export const BACKING_STYLES = {
 };
 
 export const PROGRESSIONS = {
-  rock:  [{ degree: 0 }, { degree: 3 }, { degree: 4 }, { degree: 3 }],
-  funk:  [{ degree: 0 }, { degree: 4 }, { degree: 5 }, { degree: 3 }],
-  blues: [{ degree: 0 }, { degree: 0 }, { degree: 3 }, { degree: 4 }],
-  jazz:  [{ degree: 1 }, { degree: 4 }, { degree: 0 }, { degree: 0 }],
+  rock:  [{ degree: 0, type: 'power' }, { degree: 3, type: 'power' }, { degree: 4, type: 'power' }, { degree: 3, type: 'power' }],
+  funk:  [{ degree: 0, type: 'dominant_7' }, { degree: 4, type: 'minor_7' }, { degree: 5, type: 'major_7' }, { degree: 3, type: 'dominant_7' }],
+  blues: [{ degree: 0, type: 'dominant_7' }, { degree: 0, type: 'dominant_7' }, { degree: 3, type: 'dominant_7' }, { degree: 4, type: 'dominant_7' }],
+  jazz:  [{ degree: 1, type: 'minor_7' }, { degree: 4, type: 'dominant_7' }, { degree: 0, type: 'major_7' }, { degree: 0, type: 'major_7' }],
 };

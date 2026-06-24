@@ -200,3 +200,50 @@ export function clearTarget() {
   targetNote = null;
   dotsCache.forEach(dot => dot.classList.remove('target'));
 }
+
+export function clearImprovisation() {
+  dotsCache.forEach(dot => {
+    dot.classList.remove('chord-tone', 'scale-passing', 'out-scale', 'visible');
+    dot.style.opacity = '';
+  });
+}
+
+export function renderImprovisation(state, chordTones, scaleNotes) {
+  const detectedNote = state.detectedNote;
+
+  dotsCache.forEach(dot => {
+    const note = dot.dataset.dotNote;
+    const fret = parseInt(dot.dataset.dotFret);
+    const textSpan = dot.querySelector('.dot-text');
+    const notation = state.notation || 'english';
+    const showNames = state.showNoteNames;
+
+    if (fret < state.fretFrom || fret > state.fretTo) {
+      dot.className = 'note-dot';
+      return;
+    }
+
+    if (textSpan) {
+      textSpan.textContent = showNames ? noteToDisplay(note, notation) : '';
+    }
+
+    const isDetected = detectedNote && note === detectedNote;
+    const inChord = chordTones && chordTones.includes(note);
+    const inScale = scaleNotes && scaleNotes.includes(note);
+
+    let cls = 'note-dot';
+
+    if (isDetected) cls += ' detected';
+    if (inChord) {
+      cls += ' chord-tone visible';
+    } else if (inScale) {
+      cls += ' scale-passing visible';
+    } else if (state.showAllNotes) {
+      cls += ' out-scale visible';
+    }
+
+    if (targetNote && note === targetNote) cls += ' target';
+
+    dot.className = cls;
+  });
+}

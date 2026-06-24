@@ -278,6 +278,12 @@
           <span class="impro-chord-label">Acorde</span>
           <span class="impro-chord" id="improChord">—</span>
         </div>
+        <div class="impro-timeline" id="improTimeline"></div>
+        <div class="impro-upcoming" id="improUpcoming"></div>
+        <div class="impro-target" id="improTarget" style="display:none;">
+          <span class="target-label">Toca</span>
+          <span class="target-note" id="improTargetNote"></span>
+        </div>
         <div class="impro-bar">
           <div class="impro-stat">
             <span class="impro-stat-label">Puntos</span>
@@ -295,7 +301,74 @@
         <div class="impro-feedback" id="improFeedback">
           <span id="improFeedbackText"></span>
         </div>
+        <div class="impro-results" id="improResults" style="display:none;">
+          <div class="impro-result-score" id="improResultScore">0</div>
+          <div class="impro-result-label">puntos</div>
+          <div class="impro-result-grid">
+            <div class="impro-result-item">
+              <span class="impro-result-val" id="improResultAcc">—</span>
+              <span class="impro-result-lbl">Precisión</span>
+            </div>
+            <div class="impro-result-item">
+              <span class="impro-result-val" id="improResultHit">—</span>
+              <span class="impro-result-lbl">Aciertos</span>
+            </div>
+            <div class="impro-result-item">
+              <span class="impro-result-val" id="improResultStreak">—</span>
+              <span class="impro-result-lbl">Mejor racha</span>
+            </div>
+          </div>
+          <div class="impro-res-detail" id="improResultDetail"></div>
+          <button class="impro-result-close" id="improResultClose">Cerrar</button>
+        </div>
+        <div class="impro-divider"></div>
+        <div class="impro-config-row">
+          <select id="improDifficulty" class="impro-select" title="Dificultad">
+            <option value="four_strings">Four Strings — solo acorde, sin penalizar</option>
+            <option value="walking_bass" selected>Walking Bass — acorde + escala</option>
+            <option value="funk_machine">Funk Machine — solo acorde, afinación precisa</option>
+            <option value="bootsy_level">Bootsy Level — máxima exigencia</option>
+          </select>
+          <span id="improDiffDesc" class="impro-diff-desc">Acorde + escala · afinación ±30¢ · fallo rompe racha</span>
+          <label class="toggle-label" for="improGuided" title="Modo guiado">
+            <span style="font-size:0.65rem;">Guiado</span>
+            <div class="toggle-switch">
+              <input type="checkbox" id="improGuided" />
+              <span class="toggle-knob"></span>
+            </div>
+          </label>
+        </div>
+        <div class="impro-config-row" id="improGuidedConfig" style="display:none;">
+          <select id="improGuidedSource" class="impro-select" title="Fuente de objetivos">
+            <option value="chord" selected>Solo acorde</option>
+            <option value="scale">Acorde + escala</option>
+            <option value="voice">Voice leading</option>
+          </select>
+          <select id="improGuidedSpeed" class="impro-select" title="Velocidad de cambio">
+            <option value="beat2">Cada 2 beats</option>
+            <option value="bar" selected>Cada compás</option>
+            <option value="bar2">Cada 2 compases</option>
+          </select>
+        </div>
       </div>
+      <details class="impro-help">
+        <summary>Cómo funciona</summary>
+        <p>La improvisación evalúa las notas que tocas sobre la pista de acompañamiento.</p>
+        <ul>
+          <li><strong>Acorde:</strong> el acorde actual que suena en la pista. Cambia cada compás.</li>
+          <li><strong>Próximos acordes:</strong> anticipa los siguientes 3 acordes (<code>Am7 → G7 → Cmaj7</code>).</li>
+          <li><strong>Diapasón:</strong> se ilumina con colores según la función de cada nota:
+            <span style="color:#2ecc71;">verde</span> = nota del acorde,
+            <span style="color:#3498db;">azul</span> = nota de la escala,
+            <span style="color:var(--accent);">naranja con pulso</span> = la nota que tocas.</li>
+          <li><strong>Dificultad:</strong>
+            <em>Four Strings</em> (solo notas del acorde, fallos no rompen racha),
+            <em>Walking Bass</em> (acorde + escala),
+            <em>Funk Machine</em> (solo acorde, afinación precisa, fallos penalizan),
+            <em>Bootsy Level</em> (máxima exigencia: 4 hits, afinación casi perfecta).</li>
+          <li><strong>Modo guiado:</strong> el sistema te sugiere una nota objetivo que cambia cada X tiempo. Acertarla da puntos extra. Configura la fuente de objetivos (solo acorde / acorde+escala / voice leading) y la velocidad (cada 2 beats, cada compás, cada 2 compases).</li>
+        </ul>
+      </details>
     </section>
 
     <!-- ===== TRAINING + STATS LAYOUT ===== -->

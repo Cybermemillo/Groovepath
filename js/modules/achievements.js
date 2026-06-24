@@ -44,6 +44,10 @@ function getDefaultTracker() {
     practicedEarlyMorning: false,
     sourcesSeen: [],
     dailyGoalAwardedDate: '',
+    improvisationGuidedSessions: 0,
+    improvisationBootsySessions: 0,
+    improvisationMaxStreak: 0,
+    improvisationJazzSeconds: 0,
   };
 }
 
@@ -67,6 +71,19 @@ export function recordIntervalResult({ correct, maxStreak, typesHit }) {
   }
   if (maxStreak !== undefined && maxStreak > t.intervalsCombinedMaxStreak) {
     t.intervalsCombinedMaxStreak = maxStreak;
+  }
+  saveTracker(t);
+}
+
+export function recordImprovisationResult({ difficulty, guided, maxStreak, style, durationSec }) {
+  const t = getTracker();
+  if (guided && t.improvisationGuidedSessions < 999) t.improvisationGuidedSessions++;
+  if (difficulty === 'bootsy_level' && t.improvisationBootsySessions < 999) t.improvisationBootsySessions++;
+  if (maxStreak !== undefined && maxStreak > t.improvisationMaxStreak) {
+    t.improvisationMaxStreak = maxStreak;
+  }
+  if (style === 'jazz' && durationSec) {
+    t.improvisationJazzSeconds += durationSec;
   }
   saveTracker(t);
 }
@@ -231,6 +248,13 @@ function buildSnapshot(unlockedIds) {
     goalStreak: getGoalDaysInRow(dailyMs, settings.dailyGoalMinutes || 30),
     practicedLateNight: tracker.practicedLateNight,
     practicedEarlyMorning: tracker.practicedEarlyMorning,
+    improvisationMinutes: dailyMs['improvisation'] || 0,
+    improvisation: {
+      guidedSessions: tracker.improvisationGuidedSessions || 0,
+      bootsySessions: tracker.improvisationBootsySessions || 0,
+      maxStreak: tracker.improvisationMaxStreak || 0,
+      jazzMinutes: Math.floor((tracker.improvisationJazzSeconds || 0) / 60),
+    },
     training: {
       totalRounds: trainingTotalRounds,
       correct: trainingCorrect,
@@ -339,9 +363,9 @@ export function checkAchievements() {
   const todayKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
   const todayMinutes = dailyMs[todayKey] || 0;
   const goal = (() => { try { return JSON.parse(localStorage.getItem('basslab_settings') || '{}').dailyGoalMinutes || 30; } catch { return 30; } })();
-  if (todayMinutes >= goal && tracker.dailyGoalAwardedDate !== todayKey) {
-    tracker.dailyGoalAwardedDate = todayKey;
-    saveTracker(tracker);
+  if (todayMinutes >= goal && t.dailyGoalAwardedDate !== todayKey) {
+    t.dailyGoalAwardedDate = todayKey;
+    saveTracker(t);
     if (onDailyGoalCallback) onDailyGoalCallback(todayKey);
   }
 

@@ -2,7 +2,7 @@ import { NOTES } from './constants.js';
 import { noteToDisplay } from './constants.js';
 import { $ } from '../utils/dom.js';
 import { TUNINGS, TUNING_LABELS } from './constants.js';
-import { noteToTuningMidi } from './theory.js';
+import { noteToTuningMidi, getScaleNotes, getChordNotes } from './theory.js';
 import * as fretboard from './fretboard.js';
 import * as tunerEngine from './tuner-engine.js';
 import * as tunerUi from './tuner-ui.js';
@@ -57,6 +57,8 @@ const state = {
   customTuningNotes:  ['E', 'A', 'D', 'G'],
 };
 
+const improvisationState = { chordTones: null, scaleNotes: null };
+
 let _settingsLoaded = false;
 function autoSave() {
   if (!_settingsLoaded) return;
@@ -105,8 +107,12 @@ tunerEngine.setCallbacks({
     if (intervalTrainer.isPlaying()) {
       intervalTrainer.evaluatePitch(note);
     }
-    if (!state.trainingActive && !state.improvisationActive && !intervalTrainer.isPlaying() && changed) {
-      fretboard.renderScale(state);
+    if (!state.trainingActive && !intervalTrainer.isPlaying() && changed) {
+      if (state.improvisationActive && improvisationState.chordTones && improvisationState.scaleNotes) {
+        fretboard.renderImprovisation(state, improvisationState.chordTones, improvisationState.scaleNotes);
+      } else {
+        fretboard.renderScale(state);
+      }
     }
   },
   onSilence() {
@@ -116,9 +122,14 @@ tunerEngine.setCallbacks({
     state.detectedFreq  = 0;
     tunerUi.updateTunerDisplay(null, 0, 0);
     if (state.trainingActive) training.setSilence(true);
+    if (state.improvisationActive) improvisation.setSilence();
     if (intervalTrainer.isPlaying()) intervalTrainer.setSilence(true);
     if (!state.trainingActive) {
-      fretboard.renderScale(state);
+      if (state.improvisationActive && improvisationState.chordTones && improvisationState.scaleNotes) {
+        fretboard.renderImprovisation(state, improvisationState.chordTones, improvisationState.scaleNotes);
+      } else {
+        fretboard.renderScale(state);
+      }
     }
   },
 });
@@ -152,7 +163,12 @@ function buildRootNoteGrid() {
         b.classList.toggle('active', b.dataset.note === note)
       );
       backing.setRootScale(state.rootNote, state.scaleType);
-      fretboard.renderScale(state);
+      if (state.improvisationActive) {
+        improvisationState.scaleNotes = getScaleNotes(state.rootNote, state.scaleType);
+        fretboard.renderImprovisation(state, improvisationState.chordTones || [], improvisationState.scaleNotes);
+      } else {
+        fretboard.renderScale(state);
+      }
       autoSave();
     });
     grid.appendChild(btn);
@@ -481,14 +497,26 @@ export function init() {
       improUi.updateScore(score, streak);
       improUi.showWrong(note);
     },
-    onChordChange({ chord }) {
-      improUi.updateChord(chord);
+    onChordChange({ chord, type, label }) {
+      const ct = getChordNotes(chord, type);
+      const sn = getScaleNotes(state.rootNote, state.scaleType);
+      improvisationState.chordTones = ct;
+      improvisationState.scaleNotes = sn;
+      improUi.updateChord(label || chord);
+      fretboard.renderImprovisation(state, ct, sn);
+    },
+    onTargetChange({ note }) {
+      fretboard.highlightTarget(note);
+      improUi.showTarget(note);
     },
   });
 
   backing.setCallbacks({
-    onBarStart({ chord }) {
-      improvisation.setChord(chord);
+    onBarStart({ chord, type, upcoming }) {
+      improvisation.setChord(chord, type);
+      if (upcoming) improUi.updateUpcoming(upcoming);
+      const tl = backing.getTimelineData();
+      improUi.renderTimeline(tl.bars, tl.current);
     },
   });
 
@@ -525,7 +553,12 @@ export function init() {
   $('#scaleSelect').addEventListener('change', (e) => {
     state.scaleType = e.target.value;
     backing.setRootScale(state.rootNote, state.scaleType);
-    fretboard.renderScale(state);
+    if (state.improvisationActive) {
+      improvisationState.scaleNotes = getScaleNotes(state.rootNote, state.scaleType);
+      fretboard.renderImprovisation(state, improvisationState.chordTones || [], improvisationState.scaleNotes);
+    } else {
+      fretboard.renderScale(state);
+    }
     autoSave();
   });
 
@@ -584,7 +617,11 @@ export function init() {
   $('#notationToggle').addEventListener('click', () => {
     state.notation = state.notation === 'spanish' ? 'english' : 'spanish';
     updateNotationUI();
-    fretboard.renderScale(state);
+    if (state.improvisationActive && improvisationState.chordTones && improvisationState.scaleNotes) {
+      fretboard.renderImprovisation(state, improvisationState.chordTones, improvisationState.scaleNotes);
+    } else {
+      fretboard.renderScale(state);
+    }
     buildRootNoteGrid();
     autoSave();
   });
@@ -621,13 +658,24 @@ export function init() {
         const results = improvisation.stop();
         const elapsed = practiceTime.stop('improvisation');
         const mins = Math.floor(elapsed / 60);
-        if (mins > 0) addPointsWithToast(mins * 8, 'improvisation', mins + ' min improvisación');
+        if (mins > 0) addPointsWithToast(mins * 8, 'improvisation', mins + ' min improvisaci\u00f3n');
         if (results) {
+          achievements.recordImprovisationResult({
+            difficulty: results.difficulty,
+            guided: results.guided,
+            maxStreak: results.maxStreak,
+            style: backing.getState().style,
+            durationSec: results.duration,
+          });
           stats.recordImprovisation(results);
           statsUi.render();
           populateStatsFilter();
         }
-        improUi.renderIdle();
+        improUi.renderResults(results);
+        fretboard.clearTarget();
+        fretboard.renderScale(state);
+        improvisationState.chordTones = null;
+        improvisationState.scaleNotes = null;
       }
       if (intervalTrainer.isPlaying()) {
         const results = intervalTrainer.stop();
@@ -705,13 +753,24 @@ export function init() {
         const results = improvisation.stop();
         const iElapsed = practiceTime.stop('improvisation');
         const iMins = Math.floor(iElapsed / 60);
-        if (iMins > 0) addPointsWithToast(iMins * 8, 'improvisation', iMins + ' min improvisación');
+        if (iMins > 0) addPointsWithToast(iMins * 8, 'improvisation', iMins + ' min improvisaci\u00f3n');
         if (results) {
+          achievements.recordImprovisationResult({
+            difficulty: results.difficulty,
+            guided: results.guided,
+            maxStreak: results.maxStreak,
+            style: backing.getState().style,
+            durationSec: results.duration,
+          });
           stats.recordImprovisation(results);
           statsUi.render();
           populateStatsFilter();
         }
-        improUi.renderIdle();
+        improUi.renderResults(results);
+        fretboard.clearTarget();
+        fretboard.renderScale(state);
+        improvisationState.chordTones = null;
+        improvisationState.scaleNotes = null;
       }
     } else {
       backing.stop();
@@ -724,9 +783,21 @@ export function init() {
       practiceTime.start('backing');
       backingUi.setPlayIcon(true);
       if (state.improvisationActive) {
-        improvisation.start(state.rootNote, state.scaleType);
+        improvisation.stop();
+        const diff = improUi.getDifficulty();
+        const guided = improUi.isGuided();
+        const bs = backing.getState();
+        improvisation.start(state.rootNote, state.scaleType, {
+          difficulty: diff,
+          bpm: bs.bpm,
+          guided,
+          guidedSource: guided ? improUi.getGuidedSource() : 'chord',
+          guidedSpeed: guided ? improUi.getGuidedSpeed() : 'bar',
+        });
         practiceTime.start('improvisation');
-        improUi.renderActive('—');
+        improUi.renderActive('\u2014');
+        const tl2 = backing.getTimelineData();
+        improUi.renderTimeline(tl2.bars, tl2.current);
       }
     }
   });
@@ -833,11 +904,22 @@ export function init() {
       state.trainingActive = true;
     } else if (step.mode === 'improvisation') {
       stepModeActive = 'improvisation';
-      improvisation.start(state.rootNote, state.scaleType);
+      const diff = improUi.getDifficulty();
+      const guided = improUi.isGuided();
+      const bs = backing.getState();
+      improvisation.start(state.rootNote, state.scaleType, {
+        difficulty: diff,
+        bpm: bs.bpm,
+        guided,
+        guidedSource: guided ? improUi.getGuidedSource() : 'chord',
+        guidedSpeed: guided ? improUi.getGuidedSpeed() : 'bar',
+      });
       achievements.recordSource('improvisation');
       practiceTime.start('improvisation');
       state.improvisationActive = true;
-      improUi.renderActive(step.backingStyle || '—');
+      improUi.renderActive(step.backingStyle || '\u2014');
+      const tlR = backing.getTimelineData();
+      improUi.renderTimeline(tlR.bars, tlR.current);
     }
   }
 
@@ -850,11 +932,24 @@ export function init() {
       state.trainingActive = false;
     }
     if (state.improvisationActive) {
-      improvisation.stop();
+      const results = improvisation.stop();
       const elapsed = practiceTime.stop('improvisation');
       const mins = Math.floor(elapsed / 60);
-      if (mins > 0) addPointsWithToast(mins * 8, 'improvisation', mins + ' min improvisación');
-      improUi.renderIdle();
+      if (mins > 0) addPointsWithToast(mins * 8, 'improvisation', mins + ' min improvisaci\u00f3n');
+      if (results) {
+        achievements.recordImprovisationResult({
+          difficulty: results.difficulty,
+          guided: results.guided,
+          maxStreak: results.maxStreak,
+          style: backing.getState().style,
+          durationSec: results.duration,
+        });
+      }
+      improUi.renderResults(results);
+      fretboard.clearTarget();
+      fretboard.renderScale(state);
+      improvisationState.chordTones = null;
+      improvisationState.scaleNotes = null;
       state.improvisationActive = false;
     }
     if (backing.isPlaying()) {
@@ -1107,26 +1202,88 @@ export function init() {
     state.improvisationActive = e.target.checked;
     if (state.improvisationActive) {
       if (backing.isPlaying()) {
-        improvisation.start(state.rootNote, state.scaleType);
+        const diff = improUi.getDifficulty();
+        const guided = improUi.isGuided();
+        const bs = backing.getState();
+        improvisation.start(state.rootNote, state.scaleType, {
+          difficulty: diff,
+          bpm: bs.bpm,
+          guided,
+          guidedSource: guided ? improUi.getGuidedSource() : 'chord',
+          guidedSpeed: guided ? improUi.getGuidedSpeed() : 'bar',
+        });
         achievements.recordSource('improvisation');
         practiceTime.start('improvisation');
-        improUi.renderActive('—');
+        improUi.renderActive('\u2014');
+        const tl3 = backing.getTimelineData();
+        improUi.renderTimeline(tl3.bars, tl3.current);
       } else {
-        improUi.renderIdle();
+        improUi.renderActive('\u2014', false);
       }
     } else {
       if (improvisation.isActive()) {
         const results = improvisation.stop();
         const iElapsed4 = practiceTime.stop('improvisation');
         const iMins4 = Math.floor(iElapsed4 / 60);
-        if (iMins4 > 0) addPointsWithToast(iMins4 * 8, 'improvisation', iMins4 + ' min improvisación');
+        if (iMins4 > 0) addPointsWithToast(iMins4 * 8, 'improvisation', iMins4 + ' min improvisaci\u00f3n');
         if (results) {
+          achievements.recordImprovisationResult({
+            difficulty: results.difficulty,
+            guided: results.guided,
+            maxStreak: results.maxStreak,
+            style: backing.getState().style,
+            durationSec: results.duration,
+          });
           stats.recordImprovisation(results);
           statsUi.render();
           populateStatsFilter();
         }
-        improUi.renderIdle();
+        improUi.renderResults(results);
+        fretboard.clearTarget();
+        fretboard.renderScale(state);
+        improvisationState.chordTones = null;
+        improvisationState.scaleNotes = null;
       }
     }
   });
+
+  if ($('#improGuided')) {
+    $('#improGuided').addEventListener('change', () => {
+      improUi.updateGuidedConfigVisibility();
+      if (improvisation.isActive()) {
+        const guided = improUi.isGuided();
+        const bs = backing.getState();
+        improvisation.setGuided(guided, improUi.getGuidedSource(), improUi.getGuidedSpeed(), bs.bpm);
+        if (!guided) {
+          fretboard.clearTarget();
+          improUi.hideTarget();
+        }
+      }
+    });
+    $('#improGuidedSource').addEventListener('change', () => {
+      if (improvisation.isActive() && improUi.isGuided()) {
+        const bs = backing.getState();
+        improvisation.setGuided(true, improUi.getGuidedSource(), improUi.getGuidedSpeed(), bs.bpm);
+      }
+    });
+    $('#improGuidedSpeed').addEventListener('change', () => {
+      if (improvisation.isActive() && improUi.isGuided()) {
+        const bs = backing.getState();
+        improvisation.setGuided(true, improUi.getGuidedSource(), improUi.getGuidedSpeed(), bs.bpm);
+      }
+    });
+  }
+
+  if ($('#improDifficulty')) {
+    $('#improDifficulty').addEventListener('change', () => {
+      improUi.updateDiffDescription();
+    });
+    improUi.updateDiffDescription();
+  }
+
+  if ($('#improResultClose')) {
+    $('#improResultClose').addEventListener('click', () => {
+      improUi.renderIdle();
+    });
+  }
 }
