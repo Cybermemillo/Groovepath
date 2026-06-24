@@ -163,7 +163,7 @@ function ensureButtons() {
   if (!headerControls) return;
 
   const wrap = document.createElement('span');
-  wrap.className = 'ei-btn-wrap';
+  wrap.className = 'ei-btn-wrap desktop-only';
 
   const exportBtn = document.createElement('button');
   exportBtn.id = 'exportBtn';

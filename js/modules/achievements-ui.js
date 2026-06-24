@@ -228,7 +228,7 @@ function ensureBadge() {
   const container = document.createElement('span');
   container.className = 'ach-badge-wrap';
   container.innerHTML = `
-    <span class="ach-header-points" id="achUserPointsHeader">0 pts</span>
+    <span class="ach-header-points desktop-only" id="achUserPointsHeader">0 pts</span>
     <button id="achBadge" class="btn-icon ach-badge-btn" title="Logros y puntos" aria-label="Logros y puntos">
       <i class="fa-solid fa-trophy"></i>
       <span class="ach-badge-count">0</span>

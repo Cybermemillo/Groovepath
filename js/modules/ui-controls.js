@@ -544,6 +544,8 @@ export function init() {
   $('#volumeSlider').addEventListener('input', (e) => {
     state.volume = parseFloat(e.target.value);
     synth.setVolume(state.volume);
+    const mob = document.getElementById('volumeSliderMobile');
+    if (mob) mob.value = e.target.value;
     autoSave();
   });
 
@@ -655,6 +657,69 @@ export function init() {
       btn.title = state.notation === 'spanish' ? 'Notación: española (Do Re Mi)' : 'Notación: inglesa (C D E)';
     }
   }
+
+  /* ─── Mobile menu & volume popover ─── */
+  const volumeSliderMobile = document.getElementById('volumeSliderMobile');
+  if (volumeSliderMobile) {
+    volumeSliderMobile.value = state.volume;
+    volumeSliderMobile.addEventListener('input', (e) => {
+      state.volume = parseFloat(e.target.value);
+      synth.setVolume(state.volume);
+      document.getElementById('volumeSlider').value = e.target.value;
+      autoSave();
+    });
+  }
+
+  const volumeIconBtn = document.getElementById('volumeIconBtn');
+  const volumePopover = document.getElementById('volumePopover');
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+
+  if (volumeIconBtn && volumePopover) {
+    const volumeWrap = volumePopover.parentElement;
+    volumeIconBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      volumeWrap?.classList.toggle('active');
+      mobileMenu?.classList.remove('active');
+    });
+  }
+
+  if (mobileMenuBtn && mobileMenu) {
+    mobileMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      mobileMenu.classList.toggle('active');
+      const vw = document.querySelector('.volume-mobile-wrap');
+      vw?.classList.remove('active');
+    });
+  }
+
+  const closeMobileMenu = () => {
+    mobileMenu?.classList.remove('active');
+    const vw = document.querySelector('.volume-mobile-wrap');
+    vw?.classList.remove('active');
+  };
+  document.getElementById('mobileStatsBtn')?.addEventListener('click', () => { closeMobileMenu(); statsUi.open(); });
+  document.getElementById('mobileHelpBtn')?.addEventListener('click', () => { closeMobileMenu(); document.getElementById('helpBtn')?.click(); });
+  document.getElementById('mobileExportBtn')?.addEventListener('click', () => { closeMobileMenu(); document.getElementById('exportBtn')?.click(); });
+  document.getElementById('mobileImportBtn')?.addEventListener('click', () => { closeMobileMenu(); document.getElementById('importBtn')?.click(); });
+
+  document.addEventListener('click', (e) => {
+    if (mobileMenu && !mobileMenu.contains(e.target) && e.target !== mobileMenuBtn) {
+      mobileMenu.classList.remove('active');
+    }
+    const vw = document.querySelector('.volume-mobile-wrap');
+    if (vw && !vw.contains(e.target) && e.target !== volumeIconBtn) {
+      vw.classList.remove('active');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      mobileMenu?.classList.remove('active');
+      const vw = document.querySelector('.volume-mobile-wrap');
+      vw?.classList.remove('active');
+    }
+  });
 
   $('#trainingStart').addEventListener('click', () => {
     if (state.trainingActive) {

@@ -248,6 +248,93 @@ body {
   line-height: 1;
 }
 
+/* ===== MOBILE HEADER ===== */
+.desktop-only { display: inline-flex; }
+.mobile-only { display: none; }
+.mobile-control { display: none; }
+
+.volume-mobile-wrap { position: relative; display: none; }
+.volume-mobile-wrap.active { display: inline-flex; }
+
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 56px;
+  right: 0;
+  width: 220px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  z-index: 200;
+  flex-direction: column;
+  padding: 0.5rem 0;
+}
+.mobile-menu.active { display: flex; }
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+}
+.mobile-menu-item:hover { background: var(--bg-raised); color: var(--accent); }
+.mobile-menu-item i { width: 1.1rem; text-align: center; color: var(--text-muted); }
+
+.volume-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  box-shadow: var(--shadow-card);
+  z-index: 200;
+}
+.volume-popover.active { display: block; }
+.volume-popover input[type="range"] {
+  appearance: none;
+  width: 120px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  writing-mode: horizontal-tb;
+}
+.volume-popover input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: inline-flex; }
+  .mobile-control { display: none; }
+  .mobile-control.active { display: inline-flex; }
+  .header-controls { gap: 0.35rem; position: relative; }
+  .brand-icon { width: 22px; height: 22px; }
+  .brand-name { font-size: 1rem; }
+  .header-inner { padding: 0 0.5rem; }
+  #volumeSlider { display: none; }
+  .volume-mobile-wrap { display: inline-flex; position: relative; }
+  .volume-mobile-wrap.active { display: inline-flex; }
+}
+
 /* ===== MAIN LAYOUT ===== */
 .app-main {
   max-width: 1400px;
@@ -3014,12 +3101,6 @@ body {
   .help-modal h2 { font-size: 1.25rem; }
   .metronome-widget { bottom: 0.5rem; right: 0.5rem; }
   .metro-panel { min-width: 200px; padding: 0.6rem 0.75rem; }
-  .header-inner { padding: 0 0.75rem; }
-  .brand-name { font-size: 1.1rem; }
-  .header-controls { gap: 0.4rem; }
-  .volume-label { display: none; }
-  #volumeSlider { width: 60px; }
-  .header-stats-summary { display: none; }
 }
 
 /* ===== SCROLLBAR GLOBAL ===== */
