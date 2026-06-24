@@ -338,6 +338,27 @@ body {
   gap: 1.25rem;
 }
 
+/* ===== FOOTER ===== */
+.app-footer {
+  text-align: center;
+  padding: 1.25rem 1rem 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  border-top: 1px solid var(--border);
+  margin-top: 0.5rem;
+}
+.footer-text {
+  color: var(--text-secondary);
+}
+.footer-sep {
+  margin: 0 0.4rem;
+  color: var(--border);
+}
+.footer-heart {
+  color: var(--accent);
+}
+
 /* ===== CONTROLS PANEL ===== */
 .controls-panel {
   display: grid;
@@ -2013,10 +2034,28 @@ body {
 /* ===== LEGEND ===== */
 .legend {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 0.5rem 0;
-  justify-content: center;
+}
+.legend-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.legend-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 80px;
+}
+.legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
 }
 .legend-item {
   display: flex;
@@ -2034,8 +2073,11 @@ body {
 .legend-dot.tonic     { background: var(--accent); box-shadow: var(--shadow-glow-accent); }
 .legend-dot.scale-note{ background: var(--scale-note); }
 .legend-dot.detected  { background: var(--detected); }
-.legend-dot.off-scale { background: var(--off-scale); border: 1px solid var(--border); }
-.legend-dot.arpeggio { background: var(--arpeggio); border-radius: 2px; transform: rotate(45deg); }
+.legend-dot.off-scale { background: var(--off-scale); border: 1px solid var(--border); transform: scale(0.85); }
+.legend-dot.arpeggio { background: var(--arpeggio); border-radius: 2px; transform: rotate(45deg) scale(0.85); }
+.legend-dot.chord-tone { background: var(--chord-tone, #2ecc71); box-shadow: 0 0 6px rgba(46,204,113,0.4); }
+.legend-dot.scale-passing { background: var(--scale-passing, #3498db); box-shadow: 0 0 4px rgba(52,152,219,0.3); }
+.legend-dot.out-scale { background: var(--out-scale, #e74c3c); opacity: 0.6; }
 
 /* ===== TOOLTIP ===== */
 .note-tooltip {

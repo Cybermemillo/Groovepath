@@ -493,29 +493,58 @@
 
     <!-- ===== LEGEND ===== -->
     <section class="legend" aria-label="Leyenda">
-      <div class="legend-item">
-        <span class="legend-dot tonic"></span>
-        <span>Tónica</span>
+      <div class="legend-group">
+        <span class="legend-label">Escala</span>
+        <div class="legend-row">
+          <div class="legend-item">
+            <span class="legend-dot tonic"></span>
+            <span>Tónica</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot scale-note"></span>
+            <span>Escala</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot arpeggio"></span>
+            <span>Arpegio</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot off-scale"></span>
+            <span>Fuera de escala</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot detected"></span>
+            <span>Detectada</span>
+          </div>
+        </div>
       </div>
-      <div class="legend-item">
-        <span class="legend-dot scale-note"></span>
-        <span>Nota de escala</span>
-      </div>
-      <div class="legend-item">
-        <span class="legend-dot detected"></span>
-        <span>Nota detectada</span>
-      </div>
-      <div class="legend-item">
-        <span class="legend-dot off-scale"></span>
-        <span>Fuera de escala</span>
-      </div>
-      <div class="legend-item">
-        <span class="legend-dot arpeggio"></span>
-        <span>Arpegio</span>
+      <div class="legend-group">
+        <span class="legend-label">Improvisación</span>
+        <div class="legend-row">
+          <div class="legend-item">
+            <span class="legend-dot chord-tone"></span>
+            <span>Nota del acorde</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot scale-passing"></span>
+            <span>Nota de paso</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot out-scale"></span>
+            <span>Fuera</span>
+          </div>
+        </div>
       </div>
     </section>
 
   </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="app-footer">
+    <span class="footer-text">BassLab v1.0 &copy; 2026</span>
+    <span class="footer-sep">&middot;</span>
+    <span class="footer-text">Hecho con <span class="footer-heart">&hearts;</span></span>
+  </footer>
 
   <!-- ===== TOOLTIP ===== -->
   <div class="note-tooltip" id="noteTooltip" aria-hidden="true"></div>
