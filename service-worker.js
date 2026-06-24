@@ -1,4 +1,4 @@
-const CACHE = 'basslab-v1';
+const CACHE = 'basslab-v2';
 const ASSETS = [
   '.',
   'index.html',

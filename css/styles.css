@@ -291,6 +291,7 @@ body {
 .mobile-menu-item i { width: 1.1rem; text-align: center; color: var(--text-muted); }
 
 .volume-popover {
+  display: none;
   position: absolute;
   top: 100%;
   right: 0;
@@ -301,7 +302,7 @@ body {
   box-shadow: var(--shadow-card);
   z-index: 200;
 }
-.volume-popover.active { display: block; }
+.volume-mobile-wrap.active .volume-popover { display: block; }
 .volume-popover input[type="range"] {
   appearance: none;
   width: 120px;
@@ -319,17 +320,6 @@ body {
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
-}
-
-@media (max-width: 960px) {
-  .desktop-only { display: none !important; }
-  .mobile-only { display: inline-flex; }
-  .mobile-control { display: none; }
-  .mobile-control.active { display: inline-flex; }
-  .header-controls { gap: 0.35rem; position: relative; }
-  #volumeSlider { display: none; }
-  .volume-mobile-wrap { display: inline-flex; position: relative; }
-  .volume-mobile-wrap.active { display: inline-flex; }
 }
 
 @media (max-width: 640px) {
@@ -1663,12 +1653,6 @@ body {
 .training-layout.full-width .training-panel {
   min-height: auto;
 }
-@media (max-width: 768px) {
-  .training-layout.full-width { grid-template-columns: 1fr; }
-}
-@media (max-width: 900px) {
-  .training-layout { grid-template-columns: 1fr; }
-}
 
 .training-panel {
   min-height: 0;
@@ -2072,41 +2056,34 @@ body {
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 900px) {
-  .controls-panel {
-    grid-template-columns: 1fr 1fr;
-  }
-  .control-group:first-child { grid-column: 1 / -1; }
-}
-
-@media (max-width: 640px) {
-  .app-main { padding: 1rem 0.75rem 2rem; gap: 1rem; }
-
+@media (max-width: 800px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: inline-flex; }
+  .mobile-control { display: none; }
+  .mobile-control.active { display: inline-flex; }
+  .header-controls { gap: 0.35rem; position: relative; }
+  #volumeSlider { display: none; }
+  .volume-mobile-wrap { display: inline-flex; position: relative; }
+  .volume-mobile-wrap.active { display: inline-flex; }
+  .volume-mobile-wrap.active .volume-popover { display: block; }
+  .training-layout.full-width { grid-template-columns: 1fr; }
+  .training-layout { grid-template-columns: 1fr; }
   .controls-panel {
     grid-template-columns: 1fr;
     padding: 1rem;
   }
   .control-group:first-child { grid-column: 1; }
-
+  .app-main { padding: 1rem 0.75rem 2rem; gap: 1rem; }
   .tuner-panel { grid-template-columns: 1fr; }
   .tuner-display { flex-direction: column; align-items: flex-start; gap: 1rem; }
   .tuner-meter-wrap { width: 100%; max-width: 100%; }
   .tuner-actions { flex-direction: row; align-items: center; gap: 1rem; }
   .btn-mic { flex-direction: row; padding: 10px 16px; }
-
-  .fretboard-section { padding: 1rem 0.25rem 0.5rem; }
-
-  .fretboard { min-width: 780px; grid-template-columns: 28px repeat(24, 1fr); grid-template-rows: repeat(4, 42px); }
+  .fretboard-section { padding: 1rem 0.25rem 0.5rem; overflow-x: auto; overflow-y: hidden; }
+  .fretboard { min-width: 0; grid-template-columns: 28px repeat(24, 1fr); grid-template-rows: repeat(4, 42px); }
+  .fretboard-scroll { overflow-x: visible; }
+  .fretboard-scroll::-webkit-scrollbar { display: none; }
   .note-dot { width: 22px; height: 22px; font-size: 0.55rem; }
-
-  .fretboard-scroll {
-    background:
-      linear-gradient(to right, var(--bg-surface) 0%, transparent 20px) left,
-      linear-gradient(to left, var(--bg-surface) 0%, transparent 20px) right;
-    background-repeat: no-repeat;
-    background-size: 40px 100%;
-    background-attachment: local, local;
-  }
 }
 
 /* ===== STATS MODAL ===== */
