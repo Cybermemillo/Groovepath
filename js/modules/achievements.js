@@ -198,6 +198,7 @@ function getGoalDaysInRow(dailyMs, goalMinutes) {
 function buildSnapshot(unlockedIds) {
   const tracker = getTracker();
   const dailyMs = practiceTime.getDailyMinutes();
+  const sourceMinutes = practiceTime.getMinutesBySource();
   const streaks = practiceTime.getStreaks();
   const totalMinutes = Object.values(dailyMs).reduce((a, b) => a + b, 0);
 
@@ -206,6 +207,7 @@ function buildSnapshot(unlockedIds) {
 
   // Compute training totals from stats
   let trainingTotalRounds = 0, trainingCorrect = 0, trainingWrong = 0, trainingMaxStreak = 0, trainingTotalScore = 0;
+  let totalReactionWeighted = 0;
   try {
     const sessions = JSON.parse(localStorage.getItem('basslab_stats')) || [];
     sessions.filter(s => s.type === 'training').forEach(s => {
@@ -214,6 +216,9 @@ function buildSnapshot(unlockedIds) {
       trainingWrong += (s.wrong || 0);
       if ((s.maxStreak || 0) > trainingMaxStreak) trainingMaxStreak = s.maxStreak;
       trainingTotalScore += (s.score || 0);
+      if (s.avgReactionMs && s.correct) {
+        totalReactionWeighted += s.avgReactionMs * s.correct;
+      }
     });
   } catch {}
 
@@ -229,7 +234,7 @@ function buildSnapshot(unlockedIds) {
     });
   } catch {}
 
-  const avgReactionTime = trainingCorrect > 0 ? 2.5 : 999; // approximate fallback
+  const avgReactionTime = trainingCorrect > 0 ? Math.round(totalReactionWeighted / trainingCorrect) / 1000 : 999;
 
   const settings = (() => {
     try {
@@ -248,7 +253,7 @@ function buildSnapshot(unlockedIds) {
     goalStreak: getGoalDaysInRow(dailyMs, settings.dailyGoalMinutes || 30),
     practicedLateNight: tracker.practicedLateNight,
     practicedEarlyMorning: tracker.practicedEarlyMorning,
-    improvisationMinutes: dailyMs['improvisation'] || 0,
+    improvisationMinutes: sourceMinutes.improvisation || 0,
     improvisation: {
       guidedSessions: tracker.improvisationGuidedSessions || 0,
       bootsySessions: tracker.improvisationBootsySessions || 0,
@@ -287,8 +292,8 @@ function buildSnapshot(unlockedIds) {
       tuning: settings.tuning || 'standard',
       customTuning: isCustomTuning,
     },
-    backingMinutes: dailyMs['backing'] || 0,
-    metronomeMinutes: 0, // computed below
+    backingMinutes: sourceMinutes.backing || 0,
+    metronomeMinutes: sourceMinutes.metronome || 0,
     uploadedTracksCount: tracker.uploadedTracksCount,
     combinedMaxStreak: Math.max(tracker.trainingCombinedMaxStreak, tracker.intervalsCombinedMaxStreak),
     totalUnlocked: unlockedIds.length,
@@ -296,11 +301,9 @@ function buildSnapshot(unlockedIds) {
   };
 }
 
-// Compute backing/metronome minutes from practice data
 function enrichSnapshot(snap) {
   const tracker = getTracker();
 
-  // Count distinct activity categories from sessions + tracker sources
   const categories = new Set();
   try {
     const sessions = JSON.parse(localStorage.getItem('basslab_stats')) || [];

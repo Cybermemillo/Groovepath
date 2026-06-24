@@ -87,23 +87,25 @@ export function updateChord(chord, type) {
   chordEl.textContent = chord || '\u2014';
 }
 
-export function updateUpcoming(upcoming) {
+export function updateUpcoming(labels) {
   if (!upcomingEl) return;
-  if (!upcoming || upcoming.length === 0) {
+  if (!labels || labels.length === 0) {
     upcomingEl.textContent = '';
     return;
   }
-  const labels = upcoming.map(u => formatShortLabel(u.chord, u.type));
   upcomingEl.textContent = labels.join(' \u2192 ');
 }
 
-function formatShortLabel(root, type) {
+function formatShortLabel(root, type, notation) {
   const labels = {
     'major': '', 'minor': 'm', 'major_7': 'maj7', 'minor_7': 'm7',
     'dominant_7': '7', 'minor_7b5': 'm7b5', 'diminished': 'dim', 'augmented': 'aug',
     'power': '', 'major_triad': '', 'minor_triad': 'm',
   };
-  return root + (labels[type] || '');
+  const r = (notation === 'spanish')
+    ? ({ 'C':'Do','C#':'Do#','D':'Re','D#':'Re#','E':'Mi','F':'Fa','F#':'Fa#','G':'Sol','G#':'Sol#','A':'La','A#':'La#','B':'Si' }[root] || root)
+    : root;
+  return r + (labels[type] || '');
 }
 
 export function showTarget(note) {
@@ -230,15 +232,15 @@ export function renderGuidedTarget(note) {
   showTarget(note);
 }
 
-export function renderTimeline(bars, currentIdx) {
+export function renderTimeline(bars, currentIdx, notation) {
   if (!timelineEl) return;
   timelineEl.innerHTML = '';
   if (!bars || bars.length === 0) return;
   bars.forEach((bar, i) => {
     const el = document.createElement('span');
     el.className = 'tl-bar' + (i === currentIdx ? ' active' : '');
-    el.textContent = formatShortLabel(bar.chord, bar.type);
-    el.title = 'Compás ' + (i + 1) + ': ' + formatShortLabel(bar.chord, bar.type);
+    el.textContent = formatShortLabel(bar.chord, bar.type, notation);
+    el.title = 'Compás ' + (i + 1) + ': ' + formatShortLabel(bar.chord, bar.type, notation);
     timelineEl.appendChild(el);
   });
 }

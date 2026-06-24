@@ -38,7 +38,6 @@ export const TUNINGS = {
   drop_d:         [43, 38, 33, 26],
   d_standard:     [41, 36, 31, 26],
   eb_standard:    [42, 37, 32, 27],
-  half_step_down: [42, 37, 32, 27],
   custom:         [43, 38, 33, 28],
 };
 
@@ -47,7 +46,6 @@ export const TUNING_LABELS = {
   drop_d:         ['G', 'D', 'A', 'D'],
   d_standard:     ['F', 'C', 'G', 'D'],
   eb_standard:    ['Gb', 'Db', 'Ab', 'Eb'],
-  half_step_down: ['F#', 'C#', 'G#', 'D#'],
   custom:         ['G', 'D', 'A', 'E'],
 };
 
@@ -56,7 +54,6 @@ export const TUNING_OPTIONS = [
   { value: 'drop_d',         label: 'Drop D (D-A-D-G)' },
   { value: 'd_standard',     label: 'D Standard (D-G-C-F)' },
   { value: 'eb_standard',    label: 'Eb Standard' },
-  { value: 'half_step_down', label: 'Medio tono bajo' },
   { value: 'custom',         label: 'Personalizada' },
 ];
 
@@ -107,11 +104,51 @@ export const BACKING_STYLES = {
     hat:   [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
     bass:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
   },
+  reggae: {
+    bpm: 75,
+    kick:  [0,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+    snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    bass:  [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0],
+  },
+  soul: {
+    bpm: 90,
+    kick:  [1,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,0,0],
+    snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hat:   [1,0,1,0, 1,0,1,1, 1,0,1,0, 1,1,1,0],
+    bass:  [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0],
+  },
+  latin: {
+    bpm: 110,
+    kick:  [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0],
+    snare: [0,0,1,0, 0,0,0,0, 1,0,0,0, 0,0,1,0],
+    hat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    bass:  [1,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,1,0],
+  },
+  hiphop: {
+    bpm: 85,
+    kick:  [1,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,0],
+    snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    bass:  [1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+  },
+  metal: {
+    bpm: 150,
+    kick:  [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,0,0],
+    snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hat:   [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+    bass:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+  },
 };
 
 export const PROGRESSIONS = {
-  rock:  [{ degree: 0, type: 'power' }, { degree: 3, type: 'power' }, { degree: 4, type: 'power' }, { degree: 3, type: 'power' }],
-  funk:  [{ degree: 0, type: 'dominant_7' }, { degree: 4, type: 'minor_7' }, { degree: 5, type: 'major_7' }, { degree: 3, type: 'dominant_7' }],
-  blues: [{ degree: 0, type: 'dominant_7' }, { degree: 0, type: 'dominant_7' }, { degree: 3, type: 'dominant_7' }, { degree: 4, type: 'dominant_7' }],
-  jazz:  [{ degree: 1, type: 'minor_7' }, { degree: 4, type: 'dominant_7' }, { degree: 0, type: 'major_7' }, { degree: 0, type: 'major_7' }],
+  rock:   [{ degree: 0, type: 'power' }, { degree: 3, type: 'power' }, { degree: 4, type: 'power' }, { degree: 3, type: 'power' }],
+  funk:   [{ degree: 0, type: 'dominant_7' }, { degree: 4, type: 'minor_7' }, { degree: 5, type: 'major_7' }, { degree: 3, type: 'dominant_7' }],
+  blues:  [{ degree: 0, type: 'dominant_7' }, { degree: 0, type: 'dominant_7' }, { degree: 3, type: 'dominant_7' }, { degree: 4, type: 'dominant_7' }],
+  jazz:   [{ degree: 1, type: 'minor_7' }, { degree: 4, type: 'dominant_7' }, { degree: 0, type: 'major_7' }, { degree: 0, type: 'major_7' }],
+  reggae: [{ degree: 0, type: 'major' }, { degree: 3, type: 'major' }, { degree: 4, type: 'major' }, { degree: 0, type: 'major' }],
+  soul:   [{ degree: 0, type: 'major_7' }, { degree: 5, type: 'minor_7' }, { degree: 3, type: 'major_7' }, { degree: 4, type: 'dominant_7' }],
+  latin:  [{ degree: 1, type: 'minor_7' }, { degree: 4, type: 'dominant_7' }, { degree: 0, type: 'major_7' }, { degree: 0, type: 'major_7' }],
+  hiphop: [{ degree: 0, type: 'minor_7' }, { degree: 3, type: 'minor_7' }, { degree: 4, type: 'minor_7' }, { degree: 3, type: 'minor_7' }],
+  metal:  [{ degree: 5, type: 'power' }, { degree: 3, type: 'power' }, { degree: 0, type: 'power' }, { degree: 4, type: 'power' }],
 };

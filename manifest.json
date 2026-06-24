@@ -1,0 +1,18 @@
+{
+  "name": "BassLab - Entrenador de Bajo",
+  "short_name": "BassLab",
+  "description": "Entrenador interactivo de bajo eléctrico con diapasón, afinador, backing tracks, improvisación y estadísticas.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0F0D0A",
+  "theme_color": "#41B39A",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

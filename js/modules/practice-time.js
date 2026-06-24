@@ -7,9 +7,24 @@ function todayKey() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
+function migrateOldFormat(data) {
+  let migrated = false;
+  for (const [key, val] of Object.entries(data)) {
+    if (typeof val === 'number') {
+      data[key] = { default: val };
+      migrated = true;
+    }
+  }
+  if (migrated) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+  return data;
+}
+
 function getData() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    return migrateOldFormat(raw);
   } catch {
     return {};
   }
@@ -20,7 +35,7 @@ function saveData(data) {
 }
 
 export function start(source) {
-  stop(source); // ensure no double timer
+  stop(source);
   activeTimers[source] = Date.now();
 }
 
@@ -32,23 +47,66 @@ export function stop(source) {
 
   const data = getData();
   const key = todayKey();
-  data[key] = (data[key] || 0) + elapsed;
+  if (!data[key] || typeof data[key] === 'number') {
+    data[key] = {};
+  }
+  data[key][source] = (data[key][source] || 0) + elapsed;
   saveData(data);
   return elapsed;
 }
 
-export function getTodayMinutes() {
+export function getTodayMinutes(source) {
   const data = getData();
-  return Math.round((data[todayKey()] || 0) / 60);
+  const day = data[todayKey()];
+  if (!day) return 0;
+  if (typeof day === 'number') return Math.round(day / 60);
+  if (source) return Math.round((day[source] || 0) / 60);
+  return Math.round(Object.values(day).reduce((a, b) => a + b, 0) / 60);
 }
 
 export function getDailyMinutes() {
   const data = getData();
   const map = {};
-  for (const [date, secs] of Object.entries(data)) {
-    map[date] = Math.round(secs / 60);
+  for (const [date, value] of Object.entries(data)) {
+    if (typeof value === 'number') {
+      map[date] = Math.round(value / 60);
+    } else {
+      map[date] = Math.round(Object.values(value).reduce((a, b) => a + b, 0) / 60);
+    }
   }
   return map;
+}
+
+export function getTotalMinutes() {
+  const data = getData();
+  let total = 0;
+  for (const value of Object.values(data)) {
+    if (typeof value === 'number') {
+      total += value;
+    } else {
+      total += Object.values(value).reduce((a, b) => a + b, 0);
+    }
+  }
+  return Math.round(total / 60);
+}
+
+export function getMinutesBySource() {
+  const data = getData();
+  const sources = {};
+  for (const value of Object.values(data)) {
+    if (typeof value === 'number') {
+      sources.default = (sources.default || 0) + value;
+    } else {
+      for (const [src, secs] of Object.entries(value)) {
+        sources[src] = (sources[src] || 0) + secs;
+      }
+    }
+  }
+  const result = {};
+  for (const [src, secs] of Object.entries(sources)) {
+    result[src] = Math.round(secs / 60);
+  }
+  return result;
 }
 
 export function getStreaks() {
@@ -57,37 +115,21 @@ export function getStreaks() {
 
   if (dates.length === 0) return { current: 0, max: 0 };
 
-  // Build set for O(1) lookup
   const practiceDays = new Set(dates);
 
-  // Current streak: walk back from today
   let current = 0;
-  const d = new Date();
-  while (practiceDays.has(todayKey())) {
-    current++;
-    d.setDate(d.getDate() - 1);
-    // Update todayKey to the day we're checking
-    const checkKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    if (!practiceDays.has(checkKey)) break;
-    // We need a different approach... let me redo this
-  }
-
-  // Better approach for current streak
-  let streak = 0;
   const today = new Date();
   for (let i = 0; i < 365; i++) {
     const check = new Date(today);
     check.setDate(check.getDate() - i);
     const key = check.getFullYear() + '-' + String(check.getMonth() + 1).padStart(2, '0') + '-' + String(check.getDate()).padStart(2, '0');
     if (practiceDays.has(key)) {
-      streak++;
+      current++;
     } else {
       break;
     }
   }
-  current = streak;
 
-  // Max streak
   let max = 0;
   let run = 0;
   for (let i = 0; i < dates.length; i++) {

@@ -60,6 +60,20 @@ const state = {
 const improvisationState = { chordTones: null, scaleNotes: null };
 
 let _settingsLoaded = false;
+
+function improChordDisplay(root, type, notation) {
+  const labels = {
+    'major': '', 'minor': 'm', 'major_7': 'maj7', 'minor_7': 'm7',
+    'dominant_7': '7', 'minor_7b5': 'm7b5', 'diminished': 'dim', 'augmented': 'aug',
+    'power': '', 'major_triad': '', 'minor_triad': 'm',
+  };
+  return noteToDisplay(root, notation) + (labels[type] || '');
+}
+
+function improUpcomingDisplay(upcoming, notation) {
+  return upcoming.map(u => improChordDisplay(u.chord, u.type, notation));
+}
+
 function autoSave() {
   if (!_settingsLoaded) return;
   const bs = backing.getState();
@@ -408,24 +422,7 @@ function stopTraining() {
   currentTrainingTarget = null;
 }
 
-function populateStatsFilter() {
-  const sel = $('#statsFilter');
-  const val = sel.value;
-  sel.innerHTML = '<option value="">Global</option>';
-  stats.getFilters().forEach(f => {
-    const label = f.arpeggio !== 'none'
-      ? f.root + ' arp ' + f.arpeggio.replace(/_/g, ' ')
-      : f.root + ' ' + f.scale.replace(/_/g, ' ');
-    const key = f.arpeggio !== 'none'
-      ? 'arp:' + f.root + '|' + f.arpeggio
-      : f.root + '|' + f.scale;
-    const opt = document.createElement('option');
-    opt.value = key;
-    opt.textContent = label;
-    if (key === val) opt.selected = true;
-    sel.appendChild(opt);
-  });
-}
+function populateStatsFilter() { statsUi.populateFilter(); }
 
 /* ─── Init ─── */
 export function init() {
@@ -491,32 +488,32 @@ export function init() {
   improvisation.setCallbacks({
     onCorrect({ note, points, streak, score, type }) {
       improUi.updateScore(score, streak);
-      improUi.showFeedback(note, points, type);
+      improUi.showFeedback(noteToDisplay(note, state.notation), points, type);
     },
     onWrong({ note, score, streak }) {
       improUi.updateScore(score, streak);
-      improUi.showWrong(note);
+      improUi.showWrong(noteToDisplay(note, state.notation));
     },
     onChordChange({ chord, type, label }) {
       const ct = getChordNotes(chord, type);
       const sn = getScaleNotes(state.rootNote, state.scaleType);
       improvisationState.chordTones = ct;
       improvisationState.scaleNotes = sn;
-      improUi.updateChord(label || chord);
+      improUi.updateChord(improChordDisplay(chord, type || 'power', state.notation));
       fretboard.renderImprovisation(state, ct, sn);
     },
     onTargetChange({ note }) {
       fretboard.highlightTarget(note);
-      improUi.showTarget(note);
+      improUi.showTarget(noteToDisplay(note, state.notation));
     },
   });
 
   backing.setCallbacks({
     onBarStart({ chord, type, upcoming }) {
       improvisation.setChord(chord, type);
-      if (upcoming) improUi.updateUpcoming(upcoming);
+      if (upcoming) improUi.updateUpcoming(improUpcomingDisplay(upcoming, state.notation));
       const tl = backing.getTimelineData();
-      improUi.renderTimeline(tl.bars, tl.current);
+      improUi.renderTimeline(tl.bars, tl.current, state.notation);
     },
   });
 
@@ -614,11 +611,33 @@ export function init() {
     autoSave();
   });
 
+  $('#statsBtn').addEventListener('click', () => {
+    statsUi.toggle();
+  });
+  const hssEl = $('#headerStatsSummary');
+  if (hssEl) {
+    hssEl.addEventListener('click', () => statsUi.open());
+  }
+  statsUi.renderHeaderSummary();
+
   $('#notationToggle').addEventListener('click', () => {
     state.notation = state.notation === 'spanish' ? 'english' : 'spanish';
     updateNotationUI();
     if (state.improvisationActive && improvisationState.chordTones && improvisationState.scaleNotes) {
       fretboard.renderImprovisation(state, improvisationState.chordTones, improvisationState.scaleNotes);
+      if (improvisation.isActive()) {
+        const ses = improvisation.getState();
+        if (ses && ses.currentChord) {
+          improUi.updateChord(improChordDisplay(ses.currentChord, ses.currentChordType, state.notation));
+        }
+        if (ses && ses.targetNote) {
+          improUi.showTarget(noteToDisplay(ses.targetNote, state.notation));
+        }
+        const tl = backing.getTimelineData();
+        improUi.renderTimeline(tl.bars, tl.current, state.notation);
+        const up = backing.getUpcomingChords(3);
+        if (up) improUi.updateUpcoming(improUpcomingDisplay(up, state.notation));
+      }
     } else {
       fretboard.renderScale(state);
     }
@@ -700,31 +719,6 @@ export function init() {
     }
   });
 
-  $('#statsFilter').addEventListener('change', () => {
-    const val = $('#statsFilter').value;
-    if (val === '') {
-      statsUi.render();
-    } else {
-      const parts = val.split(':');
-      if (parts[0] === 'arp') {
-        const [root, arp] = parts[1].split('|');
-        statsUi.render({ root, scale: '', arpeggio: arp });
-      } else {
-        const [root, scale] = parts[0].split('|');
-        statsUi.render({ root, scale, arpeggio: 'none' });
-      }
-    }
-  });
-
-  $('#statsClear').addEventListener('click', () => {
-    if (confirm('¿Borrar todas las estadísticas y tiempo de práctica?')) {
-      stats.clearStats();
-      practiceTime.clearAll();
-      statsUi.render();
-      populateStatsFilter();
-    }
-  });
-
   backingUi.onPlayClick(() => {
     if (audioEl && state.audioMode === 'file') {
       if (audioEl.paused) {
@@ -797,7 +791,7 @@ export function init() {
         practiceTime.start('improvisation');
         improUi.renderActive('\u2014');
         const tl2 = backing.getTimelineData();
-        improUi.renderTimeline(tl2.bars, tl2.current);
+        improUi.renderTimeline(tl2.bars, tl2.current, state.notation);
       }
     }
   });
@@ -919,7 +913,7 @@ export function init() {
       state.improvisationActive = true;
       improUi.renderActive(step.backingStyle || '\u2014');
       const tlR = backing.getTimelineData();
-      improUi.renderTimeline(tlR.bars, tlR.current);
+      improUi.renderTimeline(tlR.bars, tlR.current, state.notation);
     }
   }
 
@@ -1216,7 +1210,7 @@ export function init() {
         practiceTime.start('improvisation');
         improUi.renderActive('\u2014');
         const tl3 = backing.getTimelineData();
-        improUi.renderTimeline(tl3.bars, tl3.current);
+        improUi.renderTimeline(tl3.bars, tl3.current, state.notation);
       } else {
         improUi.renderActive('\u2014', false);
       }

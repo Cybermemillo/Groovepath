@@ -26,6 +26,8 @@ export function recordSession(data) {
     wrong: data.wrong,
     maxStreak: data.maxStreak,
     total: data.total,
+    avgReactionMs: data.avgReactionMs || 0,
+    fastestMs: data.fastestMs || 0,
   });
   saveSessions(sessions);
 }

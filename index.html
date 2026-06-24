@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Entrenador interactivo de bajo el&eacute;ctrico. Diapas&oacute;n, afinador, backing tracks, improvisaci&oacute;n y estad&iacute;sticas." />
+  <meta name="theme-color" content="#41B39A" />
   <title>BassLab</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -34,6 +38,10 @@
         <button id="notationToggle" class="btn-icon" title="Notación: inglesa / española" aria-label="Cambiar notación">
           <span style="font-size:0.8rem;font-weight:600;">Do</span>
         </button>
+        <button id="statsBtn" class="btn-icon stats-btn" title="Estadísticas" aria-label="Estadísticas">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        </button>
+        <button class="header-stats-summary" id="headerStatsSummary" title="Estadísticas" aria-label="Abrir estadísticas"></button>
         <button id="themeToggle" class="btn-icon" title="Cambiar tema" aria-label="Cambiar tema">
           <svg id="themeIconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -113,7 +121,6 @@
           <option value="drop_d">Drop D (D-A-D-G)</option>
           <option value="d_standard">D Standard (D-G-C-F)</option>
           <option value="eb_standard">Eb Standard</option>
-          <option value="half_step_down">Medio tono bajo</option>
           <option value="custom">Personalizada</option>
         </select>
         <div class="custom-tuning-notes" id="customTuningNotes" style="display:none">
@@ -184,7 +191,7 @@
     <section class="tuner-panel" aria-label="Afinador">
 
       <div class="tuner-display">
-        <div class="detected-note-wrap">
+        <div class="detected-note-wrap" aria-live="polite" aria-atomic="true">
           <span class="detected-label">Nota detectada</span>
           <div class="detected-note" id="detectedNote">—</div>
           <div class="detected-octave" id="detectedOctave"></div>
@@ -199,7 +206,7 @@
             </div>
             <div class="meter-labels">
               <span>♭ Bajo</span>
-              <span class="tuner-status" id="tunerStatus">—</span>
+              <span class="tuner-status" id="tunerStatus" aria-live="polite">—</span>
               <span>Alto ♯</span>
             </div>
           </div>
@@ -259,6 +266,11 @@
         <button class="style-btn" data-style="funk">Funk</button>
         <button class="style-btn" data-style="blues">Blues</button>
         <button class="style-btn" data-style="jazz">Jazz</button>
+        <button class="style-btn" data-style="reggae">Reggae</button>
+        <button class="style-btn" data-style="soul">Soul</button>
+        <button class="style-btn" data-style="latin">Latin</button>
+        <button class="style-btn" data-style="hiphop">Hip Hop</button>
+        <button class="style-btn" data-style="metal">Metal</button>
         <button class="style-btn" data-style="upload">+ Mi pista</button>
       </div>
       <div class="backing-info">
@@ -298,7 +310,7 @@
             <span class="impro-stat-val" id="improTime">0:00</span>
           </div>
         </div>
-        <div class="impro-feedback" id="improFeedback">
+        <div class="impro-feedback" id="improFeedback" aria-live="polite">
           <span id="improFeedbackText"></span>
         </div>
         <div class="impro-results" id="improResults" style="display:none;">
@@ -372,12 +384,12 @@
     </section>
 
     <!-- ===== TRAINING + STATS LAYOUT ===== -->
-    <div class="training-layout">
+    <div class="training-layout full-width">
 
     <!-- ===== TRAINING PANEL ===== -->
     <section class="training-panel" aria-label="Entrenamiento" id="trainingPanel">
       <div class="training-countdown" id="trainingCountdown"></div>
-      <div class="training-target" id="trainingTarget">
+      <div class="training-target" id="trainingTarget" aria-live="polite">
         <span class="target-label">Toca</span>
         <span class="target-note" id="targetNote"></span>
       </div>
@@ -395,7 +407,7 @@
           <span class="stat-value" id="trainingSpeed">—</span>
         </div>
       </div>
-      <div class="training-feedback" id="trainingFeedback">
+      <div class="training-feedback" id="trainingFeedback" aria-live="polite">
         <span id="feedbackText"></span>
       </div>
       <div class="training-silence" id="trainingSilence" style="display:none">Suelta la cuerda...</div>
@@ -410,94 +422,49 @@
         <button id="trainingStart" class="btn-training">Empezar entrenamiento</button>
       </div>
       <div class="training-results" id="trainingResults"></div>
-
-      <div class="it-divider"></div>
-
-      <div class="interval-section">
-        <div class="it-header">
-          <span class="it-title">Entrenamiento de intervalos</span>
-        </div>
-        <div class="it-config" id="itConfig">
-          <div class="it-config-row">
-            <label class="it-cfg-label">Rondas</label>
-            <select id="itRounds" class="it-select">
-              <option value="10">10</option>
-              <option value="20" selected>20</option>
-              <option value="30">30</option>
-              <option value="0">Sin l&iacute;mite</option>
-            </select>
-          </div>
-        </div>
-        <div class="it-mode-info" id="itModeInfo"></div>
-        <div class="it-target-wrap">
-          <span class="it-target" id="itTarget">—</span>
-        </div>
-        <div class="it-stats">
-          <div class="it-stat-item">
-            <span class="it-stat-label">Puntos</span>
-            <span id="itScore">0</span>
-          </div>
-          <div class="it-stat-item">
-            <span class="it-stat-label">Racha</span>
-            <span id="itStreak">0</span>
-          </div>
-          <div class="it-stat-item">
-            <span class="it-stat-label">Velocidad</span>
-            <span id="itSpeed">—</span>
-          </div>
-        </div>
-        <div class="it-feedback" id="itFeedback" style="display:none"></div>
-        <div class="it-silence" id="itSilence" style="display:none">Silencia la nota...</div>
-        <div class="it-choices" id="itChoices" style="display:none"></div>
-        <div class="it-actions">
-          <button id="itStart" class="btn-training">Empezar intervalos</button>
-        </div>
-        <div class="it-results" id="itResults" style="display:none"></div>
-      </div>
     </section>
 
-    <!-- ===== STATS PANEL ===== -->
-    <section class="stats-panel" aria-label="Estadísticas" id="statsPanel">
-      <div class="stats-header">
-        <h3 class="stats-title">Estadísticas</h3>
-        <select id="statsFilter" class="styled-select stats-filter">
-          <option value="">Global</option>
-        </select>
+    <!-- ===== INTERVAL TRAINING PANEL ===== -->
+    <section class="training-panel interval-panel" aria-label="Entrenamiento de intervalos" id="intervalPanel">
+      <div class="it-header">
+        <span class="it-title">Entrenamiento de intervalos</span>
       </div>
-      <div class="stats-daily" id="statsDaily">
-        <div class="streak-row">
-          <div class="streak-card">
-            <span class="streak-val" id="streakCurrent">0</span>
-            <span class="streak-lbl">Racha actual</span>
-          </div>
-          <div class="streak-card">
-            <span class="streak-val" id="streakMax">0</span>
-            <span class="streak-lbl">R&eacute;cord</span>
-          </div>
-          <div class="streak-card">
-            <span class="streak-val" id="streakToday">0</span>
-            <span class="streak-lbl">Hoy (min)</span>
-          </div>
+      <div class="it-config" id="itConfig">
+        <div class="it-config-row">
+          <label class="it-cfg-label">Rondas</label>
+          <select id="itRounds" class="it-select">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="30">30</option>
+            <option value="0">Sin l&iacute;mite</option>
+          </select>
         </div>
-        <div class="goal-row">
-          <label class="goal-label">Objetivo diario (min)</label>
-          <input type="number" id="dailyGoalInput" min="1" max="600" value="30" />
-          <div class="goal-meter" id="goalMeter">
-            <div class="goal-fill" id="goalFill"></div>
-          </div>
-          <span class="goal-text" id="goalText"></span>
+      </div>
+      <div class="it-mode-info" id="itModeInfo"></div>
+      <div class="it-target-wrap">
+        <span class="it-target" id="itTarget">—</span>
+      </div>
+      <div class="it-stats">
+        <div class="it-stat-item">
+          <span class="it-stat-label">Puntos</span>
+          <span id="itScore">0</span>
         </div>
-        <div class="heatmap-container" id="heatmapContainer"></div>
+        <div class="it-stat-item">
+          <span class="it-stat-label">Racha</span>
+          <span id="itStreak">0</span>
+        </div>
+        <div class="it-stat-item">
+          <span class="it-stat-label">Velocidad</span>
+          <span id="itSpeed">—</span>
+        </div>
       </div>
-      <div class="stats-type-tabs" id="statsTypeTabs">
-        <button class="stats-tab active" data-type="all">Todo</button>
-        <button class="stats-tab" data-type="training">Entrenamiento</button>
-        <button class="stats-tab" data-type="improvisation">Improvisación</button>
+      <div class="it-feedback" id="itFeedback" style="display:none" aria-live="polite"></div>
+      <div class="it-silence" id="itSilence" style="display:none">Silencia la nota...</div>
+      <div class="it-choices" id="itChoices" style="display:none"></div>
+      <div class="it-actions">
+        <button id="itStart" class="btn-training">Empezar intervalos</button>
       </div>
-      <div class="stats-global" id="statsGlobal"></div>
-      <div class="stats-chart" id="statsChart"></div>
-      <div class="stats-history" id="statsHistory"></div>
-      <button id="statsClear" class="btn-stats-clear">Borrar estadísticas</button>
+      <div class="it-results" id="itResults" style="display:none"></div>
     </section>
 
     </div>
@@ -565,7 +532,7 @@
       <section class="help-section">
         <h3>2b. Afinaci&oacute;n</h3>
         <ul>
-          <li>Usa el selector <strong>&laquo;Afinaci&oacute;n&raquo;</strong> para cambiar entre Standard, Drop D, D Standard, Eb Standard, medio tono bajo o una afinaci&oacute;n <strong>personalizada</strong>.</li>
+          <li>Usa el selector <strong>&laquo;Afinaci&oacute;n&raquo;</strong> para cambiar entre Standard, Drop D, D Standard, Eb Standard o una afinaci&oacute;n <strong>personalizada</strong>.</li>
           <li>Al elegir <em>&laquo;Personalizada&raquo;</em> aparecen 4 campos para introducir las notas de cada cuerda (de grave a agudo).</li>
           <li>El diapas&oacute;n y el afinador se adaptan autom&aacute;ticamente a la afinaci&oacute;n seleccionada.</li>
           <li>El afinador muestra ahora en qu&eacute; <strong>cuerda y traste</strong> est&aacute; la nota detectada.</li>
@@ -611,7 +578,7 @@
       <section class="help-section">
         <h3>5. Modo Entrenamiento &mdash; &laquo;Toca la nota&raquo;</h3>
         <ul>
-          <li>Pulsa el bot&oacute;n <strong>&laquo;Toca la nota&raquo;</strong> en el panel del afinador para iniciar el entrenamiento.</li>
+          <li>Elige el n&uacute;mero de rondas (10, 20, 30, 50 o sin l&iacute;mite) y pulsa <strong>&laquo;Empezar entrenamiento&raquo;</strong>.</li>
           <li>La aplicaci&oacute;n te propone una <strong>nota objetivo</strong> (resaltada en el diapas&oacute;n).</li>
           <li>Toca esa nota en tu bajo. El sistema eval&uacute;a:
             <ul>
@@ -619,8 +586,7 @@
               <li><strong>Acierto:</strong> si la nota correcta fue tocada.</li>
             </ul>
           </li>
-          <li>Tienes una <strong>cuenta atr&aacute;s</strong> (por defecto 10 segundos) para acertar cada nota.</li>
-          <li><strong>Racha:</strong> aciertos consecutivos. Cada 5 aciertos seguidos aumenta el multiplicador de puntuaci&oacute;n.</li>
+          <li><strong>Racha:</strong> aciertos consecutivos. Cada 3 aciertos seguidos aumenta el multiplicador de puntuaci&oacute;n.</li>
           <li>La sesi&oacute;n termina al pulsar el bot&oacute;n de parada o al apagar el micr&oacute;fono.</li>
           <li>Los resultados se guardan autom&aacute;ticamente en <strong>Estad&iacute;sticas</strong>.</li>
         </ul>
@@ -628,7 +594,7 @@
 
       <section class="help-section">
         <h3>5b. Entrenamiento de intervalos</h3>
-        <p>En la parte inferior del panel de Entrenamiento:</p>
+        <p>En el panel de Entrenamiento de intervalos (junto al panel de notas):</p>
         <ul>
           <li><strong>Sin micr&oacute;fono:</strong> la app suena dos notas y debes elegir el intervalo entre los botones (2m, 3M, 5J&hellip;).</li>
           <li><strong>Con micr&oacute;fono:</strong> la app suena la nota ra&iacute;z y debes <strong>tocar el intervalo</strong> en tu bajo.</li>
@@ -639,7 +605,7 @@
       <section class="help-section">
         <h3>6. Backing tracks</h3>
         <ul>
-          <li>En el panel central, pulsa uno de los estilos &mdash;<strong>Rock, Funk, Blues, Jazz</strong>&mdash; y luego <strong>&#9654;</strong> para reproducir.</li>
+          <li>En el panel central, pulsa uno de los estilos &mdash;<strong>Rock, Funk, Blues, Jazz, Reggae, Soul, Latin, Hip Hop, Metal</strong>&mdash; y luego <strong>&#9654;</strong> para reproducir.</li>
           <li>Los acordes de la pista se generan autom&aacute;ticamente a partir de la escala y ra&iacute;z seleccionadas.</li>
           <li>Usa el <strong>control de BPM</strong> para ajustar la velocidad.</li>
           <li>El volumen del backing se controla con el <strong>slider &laquo;Vol&raquo;</strong> junto al bot&oacute;n de play (independiente del volumen del sintetizador del header).</li>
@@ -651,31 +617,30 @@
       <section class="help-section">
         <h3>7. Modo Improvisaci&oacute;n</h3>
         <ul>
-          <li>Activa el toggle <strong>&laquo;Modo improvisaci&oacute;n&raquo;</strong> dentro del panel de backing.</li>
-          <li>Mientras suena el backing track, el modo eval&uacute;a en tiempo real las notas que tocas por el micr&oacute;fono.</li>
-          <li><strong>Reglas de puntuaci&oacute;n:</strong>
+          <li>Activa el toggle <strong>&laquo;Modo improvisaci&oacute;n&raquo;</strong> dentro del panel de backing. Mientras suena la pista, el sistema eval&uacute;a en tiempo real las notas que tocas.</li>
+          <li><strong>Niveles de dificultad:</strong>
             <ul>
-              <li><strong>Nota del acorde actual:</strong> +150 puntos (+50 extra si la afinaci&oacute;n es muy precisa).</li>
-              <li><strong>Nota de la escala (pero no del acorde):</strong> +80 puntos.</li>
-              <li><strong>Nota fuera de la escala:</strong> 0 puntos, la racha se rompe.</li>
+              <li><strong>Four Strings:</strong> solo notas del acorde, fallos no rompen racha.</li>
+              <li><strong>Walking Bass:</strong> acorde + escala, afinaci&oacute;n &plusmn;30&cent;.</li>
+              <li><strong>Funk Machine:</strong> solo acorde, afinaci&oacute;n precisa &plusmn;18&cent;, fallos penalizan.</li>
+              <li><strong>Bootsy Level:</strong> m&aacute;xima exigencia (4 hits, &plusmn;12&cent;).</li>
             </ul>
           </li>
-          <li>El panel de improvisaci&oacute;n muestra:
-            <ul>
-              <li>El <strong>acorde actual</strong> que est&aacute; sonando en ese comp&aacute;s.</li>
-              <li>Tu <strong>puntuaci&oacute;n</strong> en vivo.</li>
-              <li>La <strong>racha</strong> de aciertos.</li>
-              <li>Un <strong>temporizador</strong> con el tiempo transcurrido.</li>
-            </ul>
-          </li>
-          <li>Al detener el backing, la sesi&oacute;n se guarda autom&aacute;ticamente en Estad&iacute;sticas como tipo &laquo;Improvisaci&oacute;n&raquo;.</li>
+          <li><strong>Modo guiado:</strong> el sistema sugiere una nota objetivo que cambia cada X tiempo (cada 2 beats, cada comp&aacute;s o cada 2 compases). Acertarla da puntos extra. Configura la fuente: solo acorde, acorde + escala, o voice leading.</li>
+          <li><strong>Diapas&oacute;n:</strong> se ilumina seg&uacute;n la funci&oacute;n de cada nota:
+            <span style="color:#2ecc71;">verde</span> = notas del acorde,
+            <span style="color:#3498db;">azul</span> = notas de la escala,
+            <span style="color:var(--accent);">naranja con pulso</span> = nota que est&aacute;s tocando.</li>
+          <li>El panel muestra el <strong>acorde actual</strong>, los <strong>pr&oacute;ximos 3 acordes</strong> y una <strong>l&iacute;nea de tiempo</strong> con la progresi&oacute;n completa.</li>
+          <li><strong>Puntuaci&oacute;n:</strong> acierto en nota del acorde (+120 a +150 pts), acierto en escala (+60&ndash;80 pts en Walking Bass), fuera de escala (0 pts, racha se rompe). Bonus por afinaci&oacute;n precisa y rachas largas.</li>
+          <li>Al detener el backing se muestra un <strong>resumen</strong> con puntuaci&oacute;n, precisi&oacute;n, aciertos y mejor racha. La sesi&oacute;n se guarda en Estad&iacute;sticas autom&aacute;ticamente.</li>
         </ul>
       </section>
 
       <section class="help-section">
         <h3>8. Estad&iacute;sticas</h3>
         <ul>
-          <li>Accede desde el panel derecho. Usa los <strong>tabs</strong> para filtrar:
+          <li>Accede con el <strong>bot&oacute;n de estad&iacute;sticas</strong> en la cabecera (icono de barras). Usa los <strong>tabs</strong> para filtrar:
             <ul>
               <li><strong>Todo:</strong> entrenamiento + improvisaci&oacute;n.</li>
               <li><strong>Entrenamiento:</strong> solo sesiones de &laquo;Toca la nota&raquo;.</li>
@@ -693,11 +658,13 @@
       <section class="help-section">
         <h3>9. Consejos y atajos</h3>
         <ul>
-          <li>Pulsa <strong>Escape (Esc)</strong> para cerrar este modal.</li>
-          <li>Tambi&eacute;n puedes cerrarlo haciendo clic fuera del recuadro o en la <strong>&times;</strong>.</li>
-          <li>El <strong>AudioContext</strong> del navegador se activa con el primer gesto del usuario (clic, toque, etc.). Si no suena nada, haz primero clic en cualquier parte de la p&aacute;gina.</li>
-          <li>Para una mejor experiencia, usa <strong>auriculares</strong> y un micr&oacute;fono de calidad.</li>
-          <li>Se recomienda <strong>encarecidamente</strong> conectar el bajo a trav&eacute;s de una <strong>interfaz de audio</strong> para obtener la mejor detecci&oacute;n de notas y afinaci&oacute;n. Usar el micr&oacute;fono integrado del dispositivo puede dar resultados menos precisos.</li>
+          <li>Pulsa <strong>Escape (Esc)</strong> para cerrar este modal (o cualquier modal).</li>
+          <li>El <strong>AudioContext</strong> del navegador se activa con el primer gesto del usuario. Si no suena nada, haz clic en cualquier parte.</li>
+          <li>Cambia la <strong>notaci&oacute;n</strong> entre inglesa (C D E) y espa&ntilde;ola (Do Re Mi) con el bot&oacute;n <strong>Do</strong> del header. Afecta al diapas&oacute;n, afinador, entrenamiento e improvisaci&oacute;n.</li>
+          <li>Usa los botones de <strong>exportar/importar</strong> (descarga/subida) del header para hacer copia de seguridad de todos tus datos (ajustes, estad&iacute;sticas, logros, puntos, rutinas). Puedes protegerla con contrase&ntilde;a.</li>
+          <li>Los <strong>logros</strong> se desbloquean autom&aacute;ticamente al cumplir condiciones (rachas, tiempo de pr&aacute;ctica, sesiones completadas&hellip;). Consulta tu progreso desde el modal de logros (ver secci&oacute;n 11).</li>
+          <li>El <strong>tiempo de pr&aacute;ctica</strong> se registra por categor&iacute;a (entrenamiento, improvisaci&oacute;n, pistas y metr&oacute;nomo). Lo ves en el resumen del header y en Estad&iacute;sticas.</li>
+          <li>Para una mejor experiencia, usa <strong>auriculares</strong> y conecta el bajo a trav&eacute;s de una <strong>interfaz de audio</strong> (el micr&oacute;fono integrado da resultados menos precisos).</li>
           <li>Cambia entre tema oscuro y claro con el bot&oacute;n de <strong>&#9790; / &#9728;</strong> en el header.</li>
         </ul>
       </section>
@@ -710,6 +677,35 @@
           <li>Usa <strong>pausa, saltar o detener</strong> durante la reproducci&oacute;n.</li>
           <li>Las rutinas predefinidas se pueden <strong>duplicar</strong> para editarlas a tu gusto.</li>
           <li>Usa <strong>Exportar</strong> e <strong>Importar</strong> para hacer copia de seguridad de tus rutinas o compartirlas entre dispositivos.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>11. Logros</h3>
+        <ul>
+          <li>BassLab incluye <strong>+30 logros</strong> con rarezas (bronce, plata, oro, platino) y logros secretos.</li>
+          <li>Se desbloquean autom&aacute;ticamente al cumplir condiciones como: rachas de pr&aacute;ctica, sesiones completadas, minutos improvisando, uso del afinador, rutinas, etc.</li>
+          <li>Cada logro otorga <strong>puntos</strong> (75 bronce, 200 plata, 400 oro, 800 platino). Los eastereggs tambi&eacute;n dan puntos.</li>
+          <li>Al desbloquear un logro ver&aacute;s una notificaci&oacute;n emergente. Puedes consultar todos tus logros desde el icono en el header.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>12. Exportar e importar datos</h3>
+        <ul>
+          <li>Usa los botones de <strong>descarga</strong> y <strong>subida</strong> en el header para hacer una copia de seguridad completa.</li>
+          <li>La exportaci&oacute;n incluye: ajustes, estad&iacute;sticas, tiempo de pr&aacute;ctica, rutinas personalizadas, logros y puntos.</li>
+          <li>Puedes proteger el archivo con <strong>contrase&ntilde;a</strong> (cifrado AES-GCM).</li>
+          <li>Al importar, puedes <strong>fusionar</strong> rutinas o <strong>reemplazar</strong> todos los datos. El resto de datos (ajustes, stats, logros) se reemplazan siempre.</li>
+        </ul>
+      </section>
+
+      <section class="help-section">
+        <h3>13. Notaci&oacute;n inglesa / espa&ntilde;ola</h3>
+        <ul>
+          <li>El bot&oacute;n <strong>Do</strong> del header alterna entre notaci&oacute;n inglesa (C, C#, D&hellip;) y espa&ntilde;ola (Do, Do#, Re&hellip;).</li>
+          <li>Afecta a: nombres en el diapas&oacute;n, nota detectada en el afinador, objetivo del entrenamiento, nombres de acordes en improvisaci&oacute;n y rejilla de notas ra&iacute;z.</li>
+          <li>La configuraci&oacute;n se guarda y recuerda entre sesiones.</li>
         </ul>
       </section>
 
@@ -817,6 +813,64 @@
     </div>
   </div>
 
+  <!-- ===== STATS MODAL ===== -->
+  <div class="stats-modal-backdrop" id="statsModalBackdrop">
+    <div class="stats-modal" id="statsModalContent">
+      <button class="stats-modal-close" id="statsModalClose">&times;</button>
+      <div class="stats-modal-scroll">
+        <div class="stats-modal-header">
+          <h2>Estadísticas</h2>
+          <select id="statsFilter" class="styled-select stats-filter">
+            <option value="">Global</option>
+          </select>
+        </div>
+        <div class="stats-daily" id="statsDaily">
+          <div class="streak-row">
+            <div class="streak-card">
+              <span class="streak-val" id="streakCurrent">0</span>
+              <span class="streak-lbl">Racha actual</span>
+            </div>
+            <div class="streak-card">
+              <span class="streak-val" id="streakMax">0</span>
+              <span class="streak-lbl">R&eacute;cord</span>
+            </div>
+            <div class="streak-card">
+              <span class="streak-val" id="streakToday">0</span>
+              <span class="streak-lbl">Hoy (min)</span>
+            </div>
+          </div>
+          <div class="goal-row">
+            <label class="goal-label">Objetivo diario (min)</label>
+            <input type="number" id="dailyGoalInput" min="1" max="600" value="30" />
+            <div class="goal-meter" id="goalMeter">
+              <div class="goal-fill" id="goalFill"></div>
+            </div>
+            <span class="goal-text" id="goalText"></span>
+          </div>
+          <div class="heatmap-container" id="heatmapContainer"></div>
+        </div>
+        <div class="stats-type-tabs" id="statsTypeTabs">
+          <button class="stats-tab active" data-type="all">Todo</button>
+          <button class="stats-tab" data-type="training">Entrenamiento</button>
+          <button class="stats-tab" data-type="improvisation">Improvisación</button>
+        </div>
+        <div class="stats-overview" id="statsOverview"></div>
+        <div class="stats-sources" id="statsSources"></div>
+        <div class="stats-global" id="statsGlobal"></div>
+        <div class="stats-chart" id="statsChart"></div>
+        <div class="stats-history" id="statsHistory"></div>
+        <button id="statsClear" class="btn-stats-clear">Borrar estadísticas</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch(() => {});
+      });
+    }
+  </script>
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>

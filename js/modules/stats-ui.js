@@ -1,6 +1,10 @@
-import { getStats, getDailyGoal, setDailyGoal } from './stats.js';
-import { getDailyMinutes, getTodayMinutes, getStreaks } from './practice-time.js';
+import { getStats, getDailyGoal, setDailyGoal, clearStats, getFilters } from './stats.js';
+import { getDailyMinutes, getTodayMinutes, getStreaks, getTotalMinutes, getMinutesBySource } from './practice-time.js';
 import { $ } from '../utils/dom.js';
+
+const backdropEl = $('#statsModalBackdrop');
+const modalEl    = $('#statsModalContent');
+const closeBtn   = $('#statsModalClose');
 
 const globalEl   = $('#statsGlobal');
 const chartEl    = $('#statsChart');
@@ -9,18 +13,27 @@ const filterSel  = $('#statsFilter');
 const typeTabs   = $('#statsTypeTabs');
 const streakCur  = $('#streakCurrent');
 const streakMax  = $('#streakMax');
-const streakToday= $('#streakToday');
+const streakToday = $('#streakToday');
 const goalInput  = $('#dailyGoalInput');
 const goalFill   = $('#goalFill');
 const goalText   = $('#goalText');
 const heatmapEl  = $('#heatmapContainer');
+const overviewEl = $('#statsOverview');
+const sourcesEl  = $('#statsSources');
+const clearBtn   = $('#statsClear');
 
 const FORMATTER = new Intl.DateTimeFormat('es', { month: 'short', day: 'numeric' });
 
 let currentScaleFilter = null;
 let currentType = 'all';
 
-function formatTime(sec) {
+function fmtTime(totalMin) {
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+}
+
+function formatTimeSec(sec) {
   if (sec < 60) return sec + 's';
   const m = Math.floor(sec / 60);
   return m + 'm';
@@ -32,6 +45,15 @@ function barColor(correct, total) {
   if (ratio >= 0.7) return '#D4A017';
   if (ratio >= 0.4) return '#C07020';
   return 'var(--accent)';
+}
+
+function getLevel(minutes) {
+  if (minutes >= 6000) return 'Leyenda';
+  if (minutes >= 3000) return 'Virtuoso';
+  if (minutes >= 1000) return 'Profesional';
+  if (minutes >= 300) return 'Avanzado';
+  if (minutes >= 60) return 'Intermedio';
+  return 'Principiante';
 }
 
 /* ─── Calendar / streaks ─── */
@@ -56,7 +78,6 @@ function renderCalendar() {
   streakMax.textContent = streaks.max;
   streakToday.textContent = today;
 
-  // Goal
   const goalPct = Math.min(100, Math.round((today / goal) * 100));
   goalFill.style.width = goalPct + '%';
   goalInput.value = goal;
@@ -68,20 +89,16 @@ function renderCalendar() {
     goalText.className = 'goal-text';
   }
 
-  // Heatmap — proper calendar weeks (Mon–Sun)
   const now = new Date();
-  const todayWeekDay = (now.getDay() + 6) % 7; // Mon=0 … Sun=6
+  const todayWeekDay = (now.getDay() + 6) % 7;
 
-  // Find the Monday of the current week
   const thisMonday = new Date(now);
   thisMonday.setDate(now.getDate() - todayWeekDay);
   thisMonday.setHours(0, 0, 0, 0);
 
-  // Start 52 weeks before this Monday
   const start = new Date(thisMonday);
   start.setDate(start.getDate() - 52 * 7);
 
-  // Build flat list of days from start to today
   const days = [];
   const cursor = new Date(start);
   while (cursor <= now) {
@@ -91,15 +108,11 @@ function renderCalendar() {
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  // Group into columns of 7 (Mon–Sun). First column may be partial.
   const weeks = [];
-  const firstDayOfWeek = (days[0].date.getDay() + 6) % 7; // Mon=0
+  const firstDayOfWeek = (days[0].date.getDay() + 6) % 7;
   if (firstDayOfWeek > 0) {
-    // Fill empty cells at top of first column
     const padding = [];
-    for (let p = 0; p < firstDayOfWeek; p++) {
-      padding.push(null);
-    }
+    for (let p = 0; p < firstDayOfWeek; p++) padding.push(null);
     weeks.push([...padding, ...days.splice(0, 7 - firstDayOfWeek)]);
   }
   while (days.length > 0) {
@@ -108,11 +121,9 @@ function renderCalendar() {
 
   const numCols = weeks.length;
 
-  // Month labels above heatmap
   let monthHTML = '<div class="heatmap-months">';
   let lastM = -1;
   for (let c = 0; c < numCols; c++) {
-    // Find first non-null cell in this week column
     const firstDay = weeks[c].find(d => d !== null);
     if (firstDay) {
       const m = firstDay.date.getMonth();
@@ -128,7 +139,6 @@ function renderCalendar() {
   }
   monthHTML += '</div>';
 
-  // Heatmap grid
   let gridHTML = '<div class="heatmap-grid">';
   for (let c = 0; c < numCols; c++) {
     gridHTML += '<div class="heatmap-col">';
@@ -159,6 +169,84 @@ function renderCalendar() {
   heatmapEl.innerHTML = monthHTML + gridHTML + legend;
 }
 
+function renderOverview() {
+  const totalMin = getTotalMinutes();
+  const streaks = getStreaks();
+  const sources = getMinutesBySource();
+
+  // Total sessions
+  let totalSessions = 0;
+  try {
+    const sessions = JSON.parse(localStorage.getItem('basslab_stats')) || [];
+    totalSessions = sessions.length;
+  } catch {}
+
+  // Trend last 7 days
+  const daily = getDailyMinutes();
+  let last7 = 0;
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    last7 += daily[key] || 0;
+  }
+
+  // Top root/scale
+  let topLabel = '\u2014';
+  try {
+    const sessions = JSON.parse(localStorage.getItem('basslab_stats')) || [];
+    const counts = {};
+    sessions.forEach(s => {
+      if (s.type === 'training') {
+        const k = s.root + ' ' + (s.scale || '').replace(/_/g, ' ');
+        counts[k] = (counts[k] || 0) + 1;
+      }
+    });
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    if (top) topLabel = top[0] + ' (' + top[1] + ')';
+  } catch {}
+
+  // Best day
+  let bestDay = '\u2014';
+  let bestMins = 0;
+  for (const [date, mins] of Object.entries(daily)) {
+    if (mins > bestMins) { bestMins = mins; bestDay = date; }
+  }
+  if (bestDay !== '\u2014') {
+    const d = new Date(bestDay + 'T00:00:00');
+    bestDay = d.toLocaleDateString('es', { day:'numeric', month:'short' }) + ' · ' + bestMins + 'm';
+  }
+
+  const lvl = getLevel(totalMin);
+
+  overviewEl.innerHTML =
+    '<div class="stats-grid">' +
+      '<div class="stat-card"><span class="sc-val">' + fmtTime(totalMin) + '</span><span class="sc-lbl">Tiempo total</span><span class="sc-lvl">' + lvl + '</span></div>' +
+      '<div class="stat-card"><span class="sc-val">' + streaks.current + '</span><span class="sc-lbl">Racha actual</span></div>' +
+      '<div class="stat-card"><span class="sc-val">' + totalSessions + '</span><span class="sc-lbl">Sesiones</span></div>' +
+      '<div class="stat-card"><span class="sc-val">' + last7 + 'm</span><span class="sc-lbl">Últimos 7 días</span></div>' +
+      '<div class="stat-card"><span class="sc-val">' + topLabel.split(' (')[0] + '</span><span class="sc-lbl">Más practicado</span></div>' +
+      '<div class="stat-card"><span class="sc-val">' + bestDay.split(' · ')[0] + '</span><span class="sc-lbl">Mejor día</span></div>' +
+    '</div>';
+
+  // Source breakdown
+  const srcLabels = { training: 'Entrenamiento', improvisation: 'Improvisación', backing: 'Pistas', metronome: 'Metrónomo' };
+  const allMins = Object.values(sources).reduce((a, b) => a + b, 0) || 1;
+  let srcHTML = '';
+  for (const [src, label] of Object.entries(srcLabels)) {
+    const mins = sources[src] || 0;
+    const pct = Math.round((mins / allMins) * 100);
+    srcHTML +=
+      '<div class="stats-source-bar">' +
+        '<span class="ssb-label">' + label + '</span>' +
+        '<span class="ssb-value">' + fmtTime(mins) + '</span>' +
+        '<div class="ssb-bar-bg"><div class="ssb-bar-fill" style="width:' + pct + '%;background:' + (src === 'improvisation' ? 'var(--detected)' : src === 'metronome' ? '#D4A017' : 'var(--scale-note)') + '"></div></div>' +
+      '</div>';
+  }
+  sourcesEl.innerHTML = srcHTML;
+}
+
 export function init() {
   typeTabs.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -181,17 +269,92 @@ export function init() {
   });
 
   goalInput.value = getDailyGoal();
+
+  // Close modal
+  closeBtn.addEventListener('click', close);
+  backdropEl.addEventListener('click', (e) => {
+    if (e.target === backdropEl) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && backdropEl.classList.contains('active')) close();
+  });
+
+  // Clear stats
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      if (confirm('¿Borrar todas las estadísticas? Esta acción no se puede deshacer.')) {
+        clearStats();
+        render();
+      }
+    });
+  }
+
+  filterSel.addEventListener('change', () => {
+    const val = filterSel.value;
+    if (val === '') {
+      setScaleFilter(null);
+    } else {
+      const parts = val.split(':');
+      if (parts[0] === 'arp') {
+        const [root, arp] = parts[1].split('|');
+        setScaleFilter({ root, scale: '', arpeggio: arp });
+      } else {
+        const [root, scale] = parts[0].split('|');
+        setScaleFilter({ root, scale, arpeggio: 'none' });
+      }
+    }
+    render();
+  });
 }
 
 export function setScaleFilter(filter) {
   currentScaleFilter = filter;
 }
 
+export function populateFilter() {
+  const val = filterSel.value;
+  filterSel.innerHTML = '<option value="">Global</option>';
+  getFilters().forEach(f => {
+    const label = f.arpeggio !== 'none'
+      ? f.root + ' arp ' + f.arpeggio.replace(/_/g, ' ')
+      : f.root + ' ' + f.scale.replace(/_/g, ' ');
+    const key = f.arpeggio !== 'none'
+      ? 'arp:' + f.root + '|' + f.arpeggio
+      : f.root + '|' + f.scale;
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = label;
+    if (key === val) opt.selected = true;
+    filterSel.appendChild(opt);
+  });
+}
+
+export function open() {
+  backdropEl.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  render();
+}
+
+export function close() {
+  backdropEl.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+export function toggle() {
+  if (backdropEl.classList.contains('active')) {
+    close();
+  } else {
+    open();
+  }
+}
+
 export function render() {
+  renderHeaderSummary();
   const filter = currentType === 'improvisation' ? null : currentScaleFilter;
   const data = getStats(filter, currentType);
 
   renderCalendar();
+  renderOverview();
 
   if (!data) {
     globalEl.innerHTML = '<p class="stats-empty">Sin datos aún. ¡Completa una sesión!</p>';
@@ -200,14 +363,15 @@ export function render() {
     return;
   }
 
+  const accuracy = data.accuracy || 0;
   globalEl.innerHTML =
     '<div class="stats-grid">' +
       '<div class="stat-card"><span class="sc-val">' + data.sessions + '</span><span class="sc-lbl">Sesiones</span></div>' +
-      '<div class="stat-card"><span class="sc-val">' + data.accuracy + '%</span><span class="sc-lbl">Precisión</span></div>' +
+      '<div class="stat-card"><span class="sc-val">' + accuracy + '%</span><span class="sc-lbl">Precisión</span></div>' +
       '<div class="stat-card"><span class="sc-val">' + data.bestScore + '</span><span class="sc-lbl">Mejor punt.</span></div>' +
       '<div class="stat-card"><span class="sc-val">' + data.avgScore + '</span><span class="sc-lbl">Promedio</span></div>' +
       '<div class="stat-card"><span class="sc-val">' + data.bestStreak + '</span><span class="sc-lbl">Mejor racha</span></div>' +
-      '<div class="stat-card"><span class="sc-val">' + formatTime(data.practiceTime) + '</span><span class="sc-lbl">Práctica est.</span></div>' +
+      '<div class="stat-card"><span class="sc-val">' + formatTimeSec(data.practiceTime) + '</span><span class="sc-lbl">Práctica est.</span></div>' +
     '</div>';
 
   if (data.recent.length > 0) {
@@ -237,7 +401,7 @@ export function render() {
       let mode, timeStr;
       if (s.type === 'improvisation') {
         mode = '\uD83C\uDFB5 Impro ' + s.root + ' ' + (s.scale || '').replace(/_/g, ' ');
-        timeStr = s.duration ? formatTime(s.duration) : '—';
+        timeStr = s.duration ? formatTimeSec(s.duration) : '\u2014';
       } else if (s.type === 'flashcards') {
         mode = '\uD83C\uDCA0 Identifica notas';
         timeStr = (s.correct || 0) + '/' + (s.total || 10);
@@ -261,4 +425,12 @@ export function render() {
   } else {
     historyEl.innerHTML = '';
   }
+}
+
+export function renderHeaderSummary() {
+  const el = $('#headerStatsSummary');
+  if (!el) return;
+  const totalMin = getTotalMinutes();
+  const streaks = getStreaks();
+  el.innerHTML = '<span class="hss-strong">' + fmtTime(totalMin) + '</span><span class="hss-icon">\u00B7</span><span class="hss-strong">\uD83D\uDD25 ' + streaks.current + '</span>';
 }

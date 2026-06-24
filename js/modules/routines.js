@@ -38,7 +38,7 @@ const PREDEFINED = [
   {
     id: 'builtin_impro',
     name: 'Improvisación con backing',
-    description: '4 estilos de backing: rock, funk, blues, jazz. 2 min cada uno.',
+    description: '9 estilos de backing disponibles (rock, funk, blues, jazz, reggae, soul, latin, hiphop, metal). 2 min cada uno.',
     builtin: true,
     steps: [
       { root:'A', scaleType:'minor_pentatonic', arpeggioType:'none', fretFrom:1, fretTo:15, mode:'improvisation', backingStyle:'rock',  bpm:100, metronome:false, duration:120 },
