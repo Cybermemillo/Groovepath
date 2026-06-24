@@ -2080,7 +2080,7 @@ body {
   .tuner-meter-wrap { width: 100%; max-width: 100%; }
   .tuner-actions { flex-direction: row; align-items: center; gap: 1rem; }
   .btn-mic { flex-direction: row; padding: 10px 16px; }
-  .fretboard-section { padding: 1rem 0.25rem 0.5rem; overflow-x: auto; overflow-y: hidden; }
+  .fretboard-section { padding: 1rem 0.25rem 0.5rem; width: 100%; box-sizing: border-box; position: static; }
   .fretboard { min-width: 0; grid-template-columns: 28px repeat(24, 1fr); grid-template-rows: repeat(4, 42px); }
   .fretboard-scroll { overflow-x: visible; }
   .fretboard-scroll::-webkit-scrollbar { display: none; }
