@@ -1,5 +1,4 @@
 import { $ } from '../utils/dom.js';
-import { midiToStringInfo } from './theory.js';
 
 const detectedNoteEl = $('#detectedNote');
 const detectedOctave = $('#detectedOctave');
@@ -9,9 +8,17 @@ const meterNeedle    = $('#meterNeedle');
 const meterFill      = $('#meterFill');
 const micErrorBanner = $('#micErrorBanner');
 const micErrorText   = $('#micErrorText');
-const stringInfoEl   = $('#stringInfo');
 
 let activeTuningMidi = [43, 38, 33, 28];
+
+// ── Smoothing state ──
+let smoothCents      = 0;
+let smoothFreq       = 0;
+let lastStableNote   = null;
+let sameNoteFrames   = 0;
+const FACTOR         = 0.35;
+const DEADBAND       = 3;
+const CLAMP          = 50;
 
 export function setTuningMidi(midiArray) {
   activeTuningMidi = midiArray || [43, 38, 33, 28];
@@ -37,40 +44,47 @@ export function updateTunerDisplay(note, freq, cents, midi = null) {
     meterNeedle.style.left     = '50%';
     meterFill.style.width      = '0';
     meterFill.className        = 'meter-fill';
-    stringInfoEl.textContent   = '';
+    smoothCents   = 0;
+    smoothFreq    = 0;
+    lastStableNote = null;
+    sameNoteFrames = 0;
     return;
+  }
+
+  // Reset smoothing on note change
+  if (note !== lastStableNote) {
+    lastStableNote = note;
+    smoothCents    = cents;
+    smoothFreq     = freq;
+    sameNoteFrames = 0;
+  } else {
+    sameNoteFrames++;
+
+    // Only apply smoothing if outside deadband
+    if (Math.abs(cents - smoothCents) >= DEADBAND) {
+      smoothCents = smoothCents * (1 - FACTOR) + cents * FACTOR;
+    }
+    smoothFreq = smoothFreq * (1 - FACTOR) + freq * FACTOR;
   }
 
   const octave = midi !== null ? Math.floor(midi / 12) - 1 : '';
   detectedNoteEl.textContent = note;
   detectedOctave.textContent = `oct. ${octave}`;
-  tunerFreqEl.textContent    = `${freq.toFixed(1)} Hz`;
+  tunerFreqEl.textContent    = `${smoothFreq.toFixed(1)} Hz`;
 
-  if (midi !== null) {
-    const info = midiToStringInfo(midi, activeTuningMidi);
-    if (info) {
-      stringInfoEl.textContent = info.fret === 0
-        ? `Cu. ${info.string + 1} · al aire`
-        : `Cu. ${info.string + 1} · tr. ${info.fret}`;
-    } else {
-      stringInfoEl.textContent = '';
-    }
-  }
-
-  const clampedCents = Math.max(-50, Math.min(50, cents));
-  const needlePos    = 50 + clampedCents;
-
+  const clamped = Math.max(-CLAMP, Math.min(CLAMP, smoothCents));
+  const needlePos = 50 + clamped;
   meterNeedle.style.left = `${needlePos}%`;
 
-  const absCents = Math.abs(clampedCents);
-  meterFill.style.left   = cents >= 0 ? '50%' : `${needlePos}%`;
+  const absCents = Math.abs(clamped);
+  meterFill.style.left   = smoothCents >= 0 ? '50%' : `${needlePos}%`;
   meterFill.style.width  = `${absCents}%`;
 
   if (absCents <= 8) {
     tunerStatus.textContent = '\u2713 Afinado';
     tunerStatus.className   = 'tuner-status in-tune';
     meterFill.className     = 'meter-fill in-tune';
-  } else if (cents < 0) {
+  } else if (smoothCents < 0) {
     tunerStatus.textContent = '\u25BC Bajo';
     tunerStatus.className   = 'tuner-status flat';
     meterFill.className     = 'meter-fill flat';

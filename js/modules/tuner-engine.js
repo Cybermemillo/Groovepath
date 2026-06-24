@@ -8,10 +8,18 @@ let lowpassNode = null;
 let mediaStream = null;
 let rafId       = null;
 let buffer      = null;
+let corrBuf     = null;
 
 let callbacks     = {};
 let lastPitchNote = null;
-let smoothCents   = 0;
+let noteHistory   = [];
+let silenceFrames = 0;
+let detectSkip    = 0;
+
+const DETECT_INTERVAL  = 2;       // detect every 2nd rAF (~30 fps)
+const HISTORY_SIZE     = 6;       // note history for mode filter
+const SILENCE_FRAMES   = 6;       // frames before triggering silence
+const RMS_THRESHOLD    = 0.01;    // slightly lower for faster response
 
 export function setCallbacks({ onPitch, onSilence }) {
   callbacks = { onPitch, onSilence };
@@ -23,7 +31,7 @@ export async function startMic() {
 
     audioCtx     = getAudioContext();
     analyser     = audioCtx.createAnalyser();
-    analyser.fftSize = 8192;
+    analyser.fftSize = 4096;
 
     lowpassNode = audioCtx.createBiquadFilter();
     lowpassNode.type = 'lowpass';
@@ -34,10 +42,13 @@ export async function startMic() {
     sourceNode.connect(lowpassNode);
     lowpassNode.connect(analyser);
 
-    buffer = new Float32Array(analyser.fftSize);
+    buffer  = new Float32Array(analyser.fftSize);
+    corrBuf = new Float32Array(analyser.fftSize);
 
     lastPitchNote = null;
-    smoothCents   = 0;
+    noteHistory   = [];
+    silenceFrames = 0;
+    detectSkip    = 0;
     loop();
     return { success: true };
   } catch (err) {
@@ -53,16 +64,19 @@ export async function startMic() {
 }
 
 export function stopMic() {
-  if (rafId) { clearTimeout(rafId); rafId = null; }
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
   if (sourceNode) { sourceNode.disconnect(); sourceNode = null; }
   if (lowpassNode) { lowpassNode.disconnect(); lowpassNode = null; }
   if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
   lastPitchNote = null;
-  smoothCents   = 0;
+  noteHistory   = [];
 }
 
 function loop() {
-  rafId = setTimeout(loop, 100);
+  rafId = requestAnimationFrame(loop);
+  detectSkip++;
+  if (detectSkip < DETECT_INTERVAL) return;
+  detectSkip = 0;
 
   analyser.getFloatTimeDomainData(buffer);
   const freq = detectFrequency(buffer, audioCtx.sampleRate);
@@ -71,23 +85,42 @@ function loop() {
     const { midi, cents } = freqToMidi(freq);
     const note = midiToNote(midi);
 
-    smoothCents = (lastPitchNote === note)
-      ? smoothCents * 0.7 + cents * 0.3
-      : cents;
+    noteHistory.push(note);
+    if (noteHistory.length > HISTORY_SIZE) noteHistory.shift();
+    silenceFrames = 0;
 
-    const changed = note !== lastPitchNote;
-    lastPitchNote = note;
+    const currentNote = modeOf(noteHistory);
+    const changed = currentNote !== lastPitchNote;
 
-    if (callbacks.onPitch) {
-      callbacks.onPitch({ note, midi, freq, cents: smoothCents, changed });
+    if (changed || lastPitchNote === null) {
+      lastPitchNote = currentNote;
+      if (callbacks.onPitch) {
+        callbacks.onPitch({ note: currentNote, midi, freq, cents, changed: true });
+      }
+    } else if (callbacks.onPitch) {
+      callbacks.onPitch({ note: currentNote, midi, freq, cents, changed: false });
     }
   } else {
     if (lastPitchNote !== null) {
-      lastPitchNote = null;
-      smoothCents   = 0;
-      if (callbacks.onSilence) callbacks.onSilence();
+      silenceFrames++;
+      if (silenceFrames >= SILENCE_FRAMES) {
+        lastPitchNote = null;
+        noteHistory = [];
+        if (callbacks.onSilence) callbacks.onSilence();
+      }
     }
   }
+}
+
+function modeOf(arr) {
+  const counts = {};
+  let max = 0, best = arr[0];
+  for (let i = 0; i < arr.length; i++) {
+    const n = arr[i];
+    counts[n] = (counts[n] || 0) + 1;
+    if (counts[n] > max) { max = counts[n]; best = n; }
+  }
+  return best;
 }
 
 function detectFrequency(buf, sampleRate) {
@@ -95,49 +128,47 @@ function detectFrequency(buf, sampleRate) {
   let rms = 0;
   for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.012) return -1;
+  if (rms < RMS_THRESHOLD) return -1;
 
-  const corr = new Float32Array(SIZE);
+  corrBuf.fill(0);
   for (let i = 0; i < SIZE; i++) {
-    for (let j = 0; j < SIZE - i; j++) {
-      corr[i] += buf[j] * buf[j + i];
+    let sum = 0;
+    const limit = SIZE - i;
+    for (let j = 0; j < limit; j++) {
+      sum += buf[j] * buf[j + i];
     }
+    corrBuf[i] = sum;
   }
 
   let d = 0;
-  while (d < SIZE && corr[d] > corr[d + 1]) d++;
+  while (d < SIZE - 1 && corrBuf[d] > corrBuf[d + 1]) d++;
 
   let maxVal = -1, maxPos = -1;
   for (let i = d; i < SIZE; i++) {
-    if (corr[i] > maxVal) { maxVal = corr[i]; maxPos = i; }
+    if (corrBuf[i] > maxVal) { maxVal = corrBuf[i]; maxPos = i; }
   }
 
-  if (corr[0] === 0) return -1;
-
-  const clarity = maxVal / corr[0];
-  if (clarity < 0.45) return -1;
+  if (corrBuf[0] === 0) return -1;
+  const clarity = maxVal / corrBuf[0];
+  if (clarity < 0.4) return -1;
 
   const subPeriod = Math.floor(maxPos * 2);
   if (subPeriod < SIZE) {
-    const window = Math.floor(maxPos * 0.1);
-    let subMaxVal = -1, subMaxPos = -1;
-
-    const startIdx = Math.max(d, subPeriod - window);
-    const endIdx   = Math.min(SIZE - 1, subPeriod + window);
-
-    for (let i = startIdx; i <= endIdx; i++) {
-      if (corr[i] > subMaxVal) { subMaxVal = corr[i]; subMaxPos = i; }
+    const win2 = Math.floor(maxPos * 0.1);
+    let subMax = -1, subPos = -1;
+    const start = Math.max(d, subPeriod - win2);
+    const end   = Math.min(SIZE - 1, subPeriod + win2);
+    for (let i = start; i <= end; i++) {
+      if (corrBuf[i] > subMax) { subMax = corrBuf[i]; subPos = i; }
     }
-
-    if (subMaxVal > (maxVal * 0.55)) {
-      maxPos = subMaxPos;
-    }
+    if (subMax > (maxVal * 0.5)) maxPos = subPos;
   }
 
   let T0 = maxPos;
   if (T0 > 0 && T0 < SIZE - 1) {
-    const x1 = corr[T0 - 1], x2 = corr[T0], x3 = corr[T0 + 1];
-    T0 = T0 + (x1 - x3) / (2 * (x1 - 2 * x2 + x3));
+    const x1 = corrBuf[T0 - 1], x2 = corrBuf[T0], x3 = corrBuf[T0 + 1];
+    const denom = 2 * (x1 - 2 * x2 + x3);
+    if (denom !== 0) T0 = T0 + (x1 - x3) / denom;
   }
 
   return sampleRate / T0;

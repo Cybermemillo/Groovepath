@@ -32,7 +32,6 @@ function writeAllData(data) {
       localStorage.setItem(key, JSON.stringify(value));
     }
   }
-  console.log('Import: datos guardados. Keys:', Object.keys(data), 'userPoints:', data.userPoints);
 }
 
 /* ─── Crypto helpers ─── */
@@ -92,7 +91,6 @@ async function decrypt(ciphertext64, password, salt64, iv64) {
 
 export async function exportData(password) {
   const data = readAllData();
-  console.log('Export: datos recogidos. Keys:', Object.keys(data), 'userPoints:', data.userPoints);
   const payload = {
     version: VERSION,
     exportedAt: new Date().toISOString(),
