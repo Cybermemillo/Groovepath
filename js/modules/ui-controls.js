@@ -160,6 +160,7 @@ function setTheme(isDark) {
   document.body.classList.toggle('light', !isDark);
   darkIcon.style.display  = isDark ? '' : 'none';
   lightIcon.style.display = isDark ? 'none' : '';
+  // icon.png works on both themes, no src swap needed
 }
 
 /* ─── Root note grid ─── */

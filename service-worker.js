@@ -1,4 +1,4 @@
-const CACHE = 'basslab-v11';
+const CACHE = 'basslab-v13';
 const ASSETS = [
   '.',
   'index.html',
@@ -45,7 +45,13 @@ const ASSETS = [
   'js/modules/section-collapse.js',
   'js/modules/sticky-fretboard.js',
   'js/modules/debug-console.js',
-  'favicon.svg',
+  'icon.png',
+  'favicon_io/favicon.ico',
+  'favicon_io/favicon-16x16.png',
+  'favicon_io/favicon-32x32.png',
+  'favicon_io/apple-touch-icon.png',
+  'favicon_io/android-chrome-192x192.png',
+  'favicon_io/android-chrome-512x512.png',
   'manifest.json',
 ];
 
