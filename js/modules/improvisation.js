@@ -46,6 +46,9 @@ export function start(root, scale, opts = {}) {
     guidedSpeed: opts.guidedSpeed || 'bar',
     guidedBpm: opts.bpm || 100,
     targetNote: null,
+    targetDeadline: 0,
+    targetInterval: 0,
+    targetBuildHits: 0,
     targetHits: 0,
     correctTarget: 0,
     needsChange: false,
@@ -92,8 +95,18 @@ export function setChord(chordNote, chordType) {
     callbacks.onChordChange({ chord: chordNote, type: session.currentChordType, label: chordLabel });
   }
   if (session.guided && session.guidedSource !== 'scale') {
+    session.targetBuildHits = 0;
     scheduleGuidedTarget();
   }
+}
+
+export function getGuidedTimeLeft() {
+  if (!session || !session.targetDeadline) return 0;
+  return Math.max(0, session.targetDeadline - Date.now());
+}
+
+export function getGuidedTargetInterval() {
+  return session ? session.targetInterval || 4000 : 4000;
 }
 
 export function setGuided(enabled, source, speed, bpm) {
@@ -106,8 +119,9 @@ export function setGuided(enabled, source, speed, bpm) {
     scheduleGuidedTarget();
   } else {
     if (guidedInterval) { clearInterval(guidedInterval); guidedInterval = null; }
+    session.targetBuildHits = 0;
     if (callbacks.onTargetChange) {
-      callbacks.onTargetChange({ note: null });
+      callbacks.onTargetChange({ note: null, intervalMs: 0 });
     }
   }
 }
@@ -136,7 +150,7 @@ function scheduleGuidedTarget() {
 
   const intervalMs = speedMs[session.guidedSpeed] || beatMs * 4;
 
-  pickGuidedTarget();
+  pickGuidedTarget(intervalMs);
 
   guidedInterval = setInterval(() => {
     if (!session || !session.active) {
@@ -144,11 +158,11 @@ function scheduleGuidedTarget() {
       guidedInterval = null;
       return;
     }
-    pickGuidedTarget();
+    pickGuidedTarget(intervalMs);
   }, intervalMs);
 }
 
-function pickGuidedTarget() {
+function pickGuidedTarget(intervalMs = 4000) {
   if (!session || !session.currentChord) return;
 
   let candidates;
@@ -178,8 +192,12 @@ function pickGuidedTarget() {
     session.targetNote = next;
   }
 
+  session.targetDeadline = Date.now() + intervalMs;
+  session.targetInterval = intervalMs;
+  session.targetBuildHits = 0;
+
   if (callbacks.onTargetChange) {
-    callbacks.onTargetChange({ note: session.targetNote });
+    callbacks.onTargetChange({ note: session.targetNote, intervalMs });
   }
 }
 
@@ -214,10 +232,16 @@ export function evaluatePitch(note, cents) {
     session.lastPlayed = note;
   }
 
-  if (noteHits < cfg.minHits) {
-    if (session.guided && session.guidedSource !== 'scale') {
-      // Check target hit even under threshold
+  const withinThreshold = Math.abs(cents) <= cfg.centThreshold;
+  const isTarget = session.guided && note === session.targetNote;
+
+  if (isTarget && withinThreshold && noteHits < cfg.minHits) {
+    if (callbacks.onTargetBuild) {
+      callbacks.onTargetBuild({ progress: noteHits / cfg.minHits });
     }
+  }
+
+  if (noteHits < cfg.minHits) {
     return;
   }
 
@@ -227,7 +251,6 @@ export function evaluatePitch(note, cents) {
 
   const inChord = chordTones.includes(note);
   const inScale = scaleNotes.includes(note);
-  const isTarget = session.guided && note === session.targetNote;
 
   if (isTarget) {
     let points = cfg.chordPoints;
@@ -241,7 +264,7 @@ export function evaluatePitch(note, cents) {
     if (callbacks.onCorrect) {
       callbacks.onCorrect({ note, points, streak: session.streak, score: session.score, type: 'target' });
     }
-    pickGuidedTarget();
+    pickGuidedTarget(session.targetInterval || 4000);
   } else if (inChord) {
     let points = cfg.chordPoints;
     if (Math.abs(cents) <= cfg.bonusCents) points += 50;

@@ -198,14 +198,44 @@ export function highlightTarget(note) {
 
 export function clearTarget() {
   targetNote = null;
-  dotsCache.forEach(dot => dot.classList.remove('target'));
+  dotsCache.forEach(dot => dot.classList.remove('target', 'target-hit'));
+}
+
+export function pulseTarget(note) {
+  dotsCache.forEach(dot => {
+    if (dot.dataset.dotNote === note) {
+      dot.classList.remove('target-hit');
+      void dot.offsetWidth;
+      dot.classList.add('target-hit');
+      setTimeout(() => dot.classList.remove('target-hit'), 600);
+    }
+  });
+}
+
+let guidedTargetNote = null;
+
+export function highlightGuidedTarget(note) {
+  clearGuidedTarget();
+  if (!note) return;
+  guidedTargetNote = note;
+  dotsCache.forEach(dot => {
+    if (dot.dataset.dotNote === note) {
+      dot.classList.add('guided-target');
+    }
+  });
+}
+
+export function clearGuidedTarget() {
+  guidedTargetNote = null;
+  dotsCache.forEach(dot => dot.classList.remove('guided-target'));
 }
 
 export function clearImprovisation() {
   dotsCache.forEach(dot => {
-    dot.classList.remove('chord-tone', 'scale-passing', 'out-scale', 'visible');
+    dot.classList.remove('chord-tone', 'scale-passing', 'out-scale', 'visible', 'guided-target');
     dot.style.opacity = '';
   });
+  guidedTargetNote = null;
 }
 
 export function renderImprovisation(state, chordTones, scaleNotes) {

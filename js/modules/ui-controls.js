@@ -331,25 +331,48 @@ function setupTrainingCallbacks() {
   training.setCallbacks({
     onCountdown(n) {
       trainingUi.renderCountdown(n);
+      if (typeof n === 'number') synth.playTick();
     },
     onStart(target) {
       currentTrainingTarget = target;
       fretboard.highlightTarget(target.note);
-      const display = { ...target, note: noteToDisplay(target.note, state.notation) };
+      const display = {
+        ...target,
+        note: noteToDisplay(target.note, state.notation),
+        currentIndex: target.currentIndex,
+        totalTargets: target.totalTargets,
+      };
       trainingUi.renderStart(display);
     },
-    onCorrect({ note, points, streak, score, reactionMs }) {
-      trainingUi.renderCorrect({ points, streak, score });
+    onCorrect({ note, points, streak, score, reactionMs, cents, currentIndex, totalTargets }) {
+      trainingUi.renderCorrect({
+        points,
+        streak,
+        score,
+        cents,
+        currentIndex,
+        totalTargets,
+      });
       if (reactionMs) trainingUi.showSpeed(reactionMs);
-      synth.playFeedback(true);
+      synth.playFeedback(true, streak, Math.abs(cents) <= 8);
+      fretboard.pulseTarget(note);
       trainingUi.showSilenceMessage('Suelta la cuerda...');
       addPointsWithToast(10, 'training', 'Nota correcta');
       if (currentTrainingTarget && currentTrainingTarget.string !== undefined) {
         achievements.recordTrainingResult({ correct: true, stringsHit: [currentTrainingTarget.string] });
       }
     },
-    onWrong({ expected, played, streak, score }) {
-      trainingUi.renderWrong({ expected, played, streak, score });
+    onWrong({ expected, played, streak, score, currentIndex, totalTargets }) {
+      const playedDisplay = noteToDisplay(played, state.notation);
+      const expectedDisplay = noteToDisplay(expected, state.notation);
+      trainingUi.renderWrong({
+        expected: expectedDisplay,
+        played: playedDisplay,
+        streak,
+        score,
+        currentIndex,
+        totalTargets,
+      });
       synth.playFeedback(false);
       trainingUi.showSilenceMessage('Suelta la cuerda...');
     },
@@ -506,9 +529,17 @@ export function init() {
       improUi.updateChord(improChordDisplay(chord, type || 'power', state.notation));
       fretboard.renderImprovisation(state, ct, sn);
     },
-    onTargetChange({ note }) {
-      fretboard.highlightTarget(note);
-      improUi.showTarget(noteToDisplay(note, state.notation));
+    onTargetChange({ note, intervalMs }) {
+      if (note) {
+        fretboard.highlightGuidedTarget(note);
+        improUi.showTarget(noteToDisplay(note, state.notation), intervalMs);
+      } else {
+        fretboard.clearGuidedTarget();
+        improUi.hideTarget();
+      }
+    },
+    onTargetBuild({ progress }) {
+      improUi.showTargetBuild(progress);
     },
   });
 
@@ -637,7 +668,8 @@ export function init() {
           improUi.updateChord(improChordDisplay(ses.currentChord, ses.currentChordType, state.notation));
         }
         if (ses && ses.targetNote) {
-          improUi.showTarget(noteToDisplay(ses.targetNote, state.notation));
+          const interval = improvisation.getGuidedTargetInterval();
+          improUi.showTarget(noteToDisplay(ses.targetNote, state.notation), interval);
         }
         const tl = backing.getTimelineData();
         improUi.renderTimeline(tl.bars, tl.current, state.notation);
@@ -1318,6 +1350,7 @@ export function init() {
         const bs = backing.getState();
         improvisation.setGuided(guided, improUi.getGuidedSource(), improUi.getGuidedSpeed(), bs.bpm);
         if (!guided) {
+          fretboard.clearGuidedTarget();
           fretboard.clearTarget();
           improUi.hideTarget();
         }

@@ -1,4 +1,4 @@
-const CACHE = 'basslab-v10';
+const CACHE = 'basslab-v11';
 const ASSETS = [
   '.',
   'index.html',
@@ -42,6 +42,8 @@ const ASSETS = [
   'js/modules/mobile-tabs.js',
   'js/modules/toast.js',
   'js/modules/user-points.js',
+  'js/modules/section-collapse.js',
+  'js/modules/sticky-fretboard.js',
   'favicon.svg',
   'manifest.json',
 ];

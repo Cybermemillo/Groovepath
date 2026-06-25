@@ -4,9 +4,19 @@ const STORAGE_KEY = 'basslab_news_seen';
 
 const UPDATES = [
   {
+    date: '2026-06-25',
+    version: 'v1.1',
+    title: 'BassLab v1.1 \u2014 Juice y mejoras de UX',
+    body: 'Entrenamiento m\u00e1s jugoso: animaciones de acierto y fallo, pop en la racha, colores por nivel de combo, barra de progreso, cuenta atr\u00e1s con colores y resultados animados con rango S/A/B/C. ' +
+      'Modo guiado de improvisaci\u00f3n mejorado: temporizador circular, indicador de calentamiento, feedback por tipo de acierto, resaltado dorado en el diapas\u00f3n, colores de racha. ' +
+      'Diapas\u00f3n sticky real en escritorio (sin l\u00edmite del contenedor). ' +
+      'Secciones colapsables en escritorio para personalizar la vista. ' +
+      'Sonidos de feedback refinados y tono de tick en la cuenta atr\u00e1s del entrenamiento.',
+  },
+  {
     date: '2026-06-24',
     version: 'v1.0',
-    title: 'BassLab v1.0 — Lanzamiento estable',
+    title: 'BassLab v1.0 \u2014 Lanzamiento estable',
     body: 'Primera versi\u00f3n completa del entrenador de bajo. Incluye diapas\u00f3n interactivo, entrenamiento con micr\u00f3fono, afinador crom\u00e1tico, backing tracks (9 estilos), improvisaci\u00f3n guiada, metr\u00f3nomo, rutinas personalizables, estad\u00edsticas con gr\u00e1ficos y sistema de logros.',
   },
   {

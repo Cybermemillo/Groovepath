@@ -75,6 +75,7 @@ function shuffle(arr) {
 }
 
 function nextTarget() {
+  if (!session) return;
   awaitingSilence = false;
   if (session.currentIndex >= session.totalTargets) {
     finishSession();
@@ -94,7 +95,13 @@ function nextTarget() {
   wrongHits = 0;
   lastNote = null;
 
-  if (callbacks.onStart) callbacks.onStart(target);
+  if (callbacks.onStart) {
+    callbacks.onStart({
+      ...target,
+      currentIndex: session.currentIndex,
+      totalTargets: session.totalTargets,
+    });
+  }
 }
 
 function onCorrect(cents) {
@@ -126,7 +133,16 @@ function onCorrect(cents) {
   wrongHits = 0;
 
   if (callbacks.onCorrect) {
-    callbacks.onCorrect({ note: session.target.note, points, streak: session.streak, score: session.score, reactionMs: elapsed });
+    callbacks.onCorrect({
+      note: session.target.note,
+      points,
+      streak: session.streak,
+      score: session.score,
+      reactionMs: elapsed,
+      cents,
+      currentIndex: session.currentIndex,
+      totalTargets: session.totalTargets,
+    });
   }
 }
 
@@ -141,7 +157,14 @@ function onWrong(played) {
   wrongHits = 0;
 
   if (callbacks.onWrong) {
-    callbacks.onWrong({ expected: session.target.note, played, streak: session.streak, score: session.score });
+    callbacks.onWrong({
+      expected: session.target.note,
+      played,
+      streak: session.streak,
+      score: session.score,
+      currentIndex: session.currentIndex,
+      totalTargets: session.totalTargets,
+    });
   }
 }
 

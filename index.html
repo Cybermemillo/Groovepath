@@ -94,6 +94,13 @@
 
     <div class="tab-panel active" data-panel="controls">
 
+    <div class="section-header" data-section="controls">
+      <span class="section-header-title">Controles</span>
+      <button class="section-collapse-btn" aria-label="Contraer controles">
+        <svg class="section-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+
     <!-- ===== CONTROLS PANEL ===== -->
     <section class="controls-panel" aria-label="Controles">
 
@@ -210,6 +217,13 @@
 
     <div class="tab-panel" data-panel="fretboard">
 
+    <div class="section-header" data-section="fretboard">
+      <span class="section-header-title">Diapasón</span>
+      <button class="section-collapse-btn" aria-label="Contraer diapasón">
+        <svg class="section-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+
     <!-- ===== FRETBOARD ===== -->
     <section class="fretboard-section" aria-label="Diapasón">
       <div class="fretboard-wrapper">
@@ -274,6 +288,13 @@
 
     <div class="tab-panel" data-panel="tuner">
 
+    <div class="section-header" data-section="tuner">
+      <span class="section-header-title">Afinador</span>
+      <button class="section-collapse-btn" aria-label="Contraer afinador">
+        <svg class="section-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+
     <!-- ===== TUNER PANEL ===== -->
     <section class="tuner-panel" aria-label="Afinador">
 
@@ -331,6 +352,13 @@
 
     <div class="tab-panel" data-panel="backing">
 
+    <div class="section-header" data-section="backing">
+      <span class="section-header-title">Backing track</span>
+      <button class="section-collapse-btn" aria-label="Contraer backing track">
+        <svg class="section-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+
     <!-- ===== BACKING TRACK ===== -->
     <section class="backing-panel" aria-label="Backing track" id="backingPanel">
       <div class="backing-header">
@@ -384,8 +412,16 @@
         <div class="impro-timeline" id="improTimeline"></div>
         <div class="impro-upcoming" id="improUpcoming"></div>
         <div class="impro-target" id="improTarget" style="display:none;">
-          <span class="target-label">Toca</span>
-          <span class="target-note" id="improTargetNote"></span>
+          <div class="impro-target-ring" id="improTargetRing">
+            <svg viewBox="0 0 36 36" aria-hidden="true">
+              <circle class="impro-ring-bg" cx="18" cy="18" r="15.9155"/>
+              <circle class="impro-ring-fill" id="improRingFill" cx="18" cy="18" r="15.9155"/>
+            </svg>
+            <div class="impro-target-content">
+              <span class="target-label">Toca</span>
+              <span class="target-note" id="improTargetNote"></span>
+            </div>
+          </div>
         </div>
         <div class="impro-bar">
           <div class="impro-stat">
@@ -404,6 +440,7 @@
         <div class="impro-feedback" id="improFeedback" aria-live="polite">
           <span id="improFeedbackText"></span>
         </div>
+        <div class="impro-floats" id="improFloats" aria-hidden="true"></div>
         <div class="impro-results" id="improResults" style="display:none;">
           <div class="impro-result-score" id="improResultScore">0</div>
           <div class="impro-result-label">puntos</div>
@@ -478,11 +515,21 @@
 
     <div class="tab-panel" data-panel="training">
 
+    <div class="section-header" data-section="training">
+      <span class="section-header-title">Entrenamiento</span>
+      <button class="section-collapse-btn" aria-label="Contraer entrenamiento">
+        <svg class="section-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+
     <!-- ===== TRAINING + STATS LAYOUT ===== -->
     <div class="training-layout full-width">
 
     <!-- ===== TRAINING PANEL ===== -->
     <section class="training-panel" aria-label="Entrenamiento" id="trainingPanel">
+      <div class="training-progress" id="trainingProgress" style="display:none">
+        <div class="training-progress-fill" id="trainingProgressFill"></div>
+      </div>
       <div class="training-countdown" id="trainingCountdown"></div>
       <div class="training-target" id="trainingTarget" aria-live="polite">
         <span class="target-label">Toca</span>
@@ -505,6 +552,7 @@
       <div class="training-feedback" id="trainingFeedback" aria-live="polite">
         <span id="feedbackText"></span>
       </div>
+      <div class="training-floats" id="trainingFloats" aria-hidden="true"></div>
       <div class="training-silence" id="trainingSilence" style="display:none">Suelta la cuerda...</div>
       <div class="training-actions">
         <select id="trainingRounds" class="it-select">
