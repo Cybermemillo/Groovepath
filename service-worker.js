@@ -44,6 +44,7 @@ const ASSETS = [
   'js/modules/user-points.js',
   'js/modules/section-collapse.js',
   'js/modules/sticky-fretboard.js',
+  'js/modules/debug-console.js',
   'favicon.svg',
   'manifest.json',
 ];
