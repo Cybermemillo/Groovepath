@@ -6,6 +6,7 @@ const DEFAULTS = {
   arpeggioType: 'none',
   soloArpeggio: false,
   showNames: true,
+  showChordFunctions: false,
   minFret: 0,
   maxFret: 24,
   backingStyle: 'rock',

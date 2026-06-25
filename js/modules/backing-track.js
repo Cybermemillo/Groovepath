@@ -1,6 +1,6 @@
 import { getAudioContext, resumeAudioContext, getMasterNode } from './audio-engine.js';
 import { getChordRoot, noteIndex, getChordNotes } from './theory.js';
-import { NOTES, BACKING_STYLES, PROGRESSIONS } from './constants.js';
+import { NOTES, BACKING_STYLES, PROGRESSIONS, BACKING_PROGRESSIONS } from './constants.js';
 
 let state = {
   playing: false,
@@ -9,6 +9,8 @@ let state = {
   root: 'A',
   scale: 'minor_pentatonic',
   volume: 0.8,
+  progression: 'none',
+  progressionKeyOffset: 0,
 };
 
 let schedulerTimer = null;
@@ -33,6 +35,7 @@ export function setRootScale(root, scale) {
 }
 
 export function setStyle(style) {
+  if (!BACKING_STYLES[style]) return;
   state.style = style;
   state.bpm = BACKING_STYLES[style].bpm;
 }
@@ -40,6 +43,31 @@ export function setStyle(style) {
 export function setBpm(bpm) {
   state.bpm = bpm;
   stepLength = 60 / bpm / 4;
+}
+
+export function setProgression(name) {
+  state.progression = name || 'none';
+  state.progressionKeyOffset = 0;
+  currentChordIndex = 0;
+  currentStep = 0;
+}
+
+export function getActiveProgression() {
+  const p = BACKING_PROGRESSIONS[state.progression];
+  if (!p || !p.bars) return PROGRESSIONS[state.style] || PROGRESSIONS.rock;
+  return p.bars;
+}
+
+export function getCurrentChordFunction() {
+  if (state.progression === 'none') return null;
+  const p = BACKING_PROGRESSIONS[state.progression];
+  if (!p || !p.bars) return null;
+  const idx = currentChordIndex % p.bars.length;
+  return p.bars[idx].function || null;
+}
+
+export function rotateProgressionKey(semitones) {
+  state.progressionKeyOffset = (state.progressionKeyOffset + (semitones || 1) + 12) % 12;
 }
 
 export function setVolume(v) {
@@ -171,18 +199,27 @@ function scheduleStep(step) {
     currentChordIndex++;
   }
 
-  const prog = PROGRESSIONS[state.style];
+  const prog = getActiveProgression();
   const chordIdx = currentChordIndex % prog.length;
-  const degree = prog[chordIdx].degree;
+  const degree = (prog[chordIdx].degree + state.progressionKeyOffset) % 7;
   const chordType = prog[chordIdx].type || 'power';
   const chordRoot = getChordRoot(state.root, state.scale, degree);
+  const chordFunction = prog[chordIdx].function || null;
 
   if (barInProg === 0 && btCallbacks.onBarStart) {
     const upcoming = getUpcomingChords(3);
-    btCallbacks.onBarStart({ chord: chordRoot, type: chordType, upcoming });
+    btCallbacks.onBarStart({ chord: chordRoot, type: chordType, upcoming, function: chordFunction });
   }
 
   const now = nextStepTime;
+
+  if (btCallbacks.onBeat) {
+    const stepsPerBar = styleDef.kick.length;
+    const beatsPerBar = stepsPerBar / 4;
+    const beatInBar = Math.floor(barInProg / beatsPerBar);
+    btCallbacks.onBeat({ time: now, beat: beatInBar, bar: currentBar, beatsPerBar });
+  }
+
   const v = state.volume;
 
   if (barInProg === 0) {
@@ -213,7 +250,7 @@ function scheduler() {
   if (!state.playing) return;
 
   const ctx = getAudioContext();
-  const styleDef = BACKING_STYLES[state.style];
+  const styleDef = BACKING_STYLES[state.style] || BACKING_STYLES.rock;
   const stepsPerBar = styleDef.kick.length;
 
   while (nextStepTime < ctx.currentTime + 0.15) {

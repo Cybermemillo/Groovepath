@@ -81,7 +81,7 @@ function makeFakeFlashSession() {
 const basslab = {
   help() {
     console.log(
-      '%c🎸 BassLab Debug Console %cv1.1\n\n' +
+      '%c🎸 BassLab Debug Console %cv1.4\n\n' +
       '%cComandos disponibles:\n\n' +
       '  basslab.help()                          → este mensaje\n' +
       '  basslab.reload()                        → recargar la app\n' +
@@ -325,7 +325,7 @@ const basslab = {
 export function init() {
   window.basslab = basslab;
   console.log(
-    '%c🎸 %cBassLab Debug Console %cv1.1%c — Escribe %cbasslab.help()%c para ver comandos',
+    '%c🎸 %cBassLab Debug Console %cv1.4%c — Escribe %cbasslab.help()%c para ver comandos',
     'font-size:1.1em',
     'color:#41B39A;font-weight:700',
     'color:#aaa;font-size:0.8em',

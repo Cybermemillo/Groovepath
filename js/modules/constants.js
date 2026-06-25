@@ -152,3 +152,71 @@ export const PROGRESSIONS = {
   hiphop: [{ degree: 0, type: 'minor_7' }, { degree: 3, type: 'minor_7' }, { degree: 4, type: 'minor_7' }, { degree: 3, type: 'minor_7' }],
   metal:  [{ degree: 5, type: 'power' }, { degree: 3, type: 'power' }, { degree: 0, type: 'power' }, { degree: 4, type: 'power' }],
 };
+
+export const BACKING_PROGRESSIONS = {
+  none: { name: 'Por defecto del estilo', bars: null },
+  ii_v_i: {
+    name: 'II–V–I mayor',
+    bars: [
+      { degree: 1, type: 'minor_7', function: 'II' },
+      { degree: 4, type: 'dominant_7', function: 'V' },
+      { degree: 0, type: 'major_7', function: 'I' },
+      { degree: 0, type: 'major_7', function: 'I' },
+    ],
+  },
+  ii_v_i_minor: {
+    name: 'II–V–I menor',
+    bars: [
+      { degree: 1, type: 'minor_7b5', function: 'iim7b5' },
+      { degree: 4, type: 'dominant_7', function: 'V7' },
+      { degree: 0, type: 'minor_7', function: 'im7' },
+      { degree: 0, type: 'minor_7', function: 'im7' },
+    ],
+  },
+  i_v_vi_iv: {
+    name: 'I–V–vi–IV',
+    bars: [
+      { degree: 0, type: 'major', function: 'I' },
+      { degree: 4, type: 'major', function: 'V' },
+      { degree: 5, type: 'minor', function: 'vi' },
+      { degree: 3, type: 'major', function: 'IV' },
+    ],
+  },
+  blues_12: {
+    name: 'Blues 12 compases',
+    bars: [
+      { degree: 0, type: 'dominant_7', function: 'I7' },
+      { degree: 0, type: 'dominant_7', function: 'I7' },
+      { degree: 0, type: 'dominant_7', function: 'I7' },
+      { degree: 0, type: 'dominant_7', function: 'I7' },
+      { degree: 3, type: 'dominant_7', function: 'IV7' },
+      { degree: 3, type: 'dominant_7', function: 'IV7' },
+      { degree: 0, type: 'dominant_7', function: 'I7' },
+      { degree: 0, type: 'dominant_7', function: 'I7' },
+      { degree: 4, type: 'dominant_7', function: 'V7' },
+      { degree: 3, type: 'dominant_7', function: 'IV7' },
+      { degree: 0, type: 'dominant_7', function: 'I7' },
+      { degree: 4, type: 'dominant_7', function: 'V7' },
+    ],
+  },
+  rhythm_changes: {
+    name: 'Rhythm Changes',
+    bars: [
+      { degree: 0, type: 'major_7', function: 'Imaj7' },
+      { degree: 5, type: 'minor_7', function: 'viim7' },
+      { degree: 1, type: 'minor_7', function: 'iim7' },
+      { degree: 4, type: 'dominant_7', function: 'V7' },
+    ],
+  },
+  andalusi: {
+    name: 'Andalusí (Am–G–F–E)',
+    bars: [
+      { degree: 5, type: 'minor', function: 'vim' },
+      { degree: 4, type: 'major', function: 'V' },
+      { degree: 3, type: 'major', function: 'IV' },
+      { degree: 2, type: 'minor', function: 'iiim' },
+    ],
+  },
+};
+
+export const PROGRESSION_KEYS = ['none','ii_v_i','ii_v_i_minor','i_v_vi_iv','blues_12','rhythm_changes','andalusi'];

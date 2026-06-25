@@ -465,6 +465,16 @@ const ACHIEVEMENTS = [
     progress: (s) => ({ current: Math.min(s.improvisation.maxStreak, 20), target: 20 }),
   },
   {
+    id: 'impro_daily_streak_7',
+    title: 'Impro cada día',
+    description: 'Racha de 7 días seguidos improvisando.',
+    icon: 'fa-solid fa-calendar-star',
+    rarity: 'gold',
+    secret: false,
+    condition: (s) => s.improvisation.dailyStreak >= 7,
+    progress: (s) => ({ current: Math.min(s.improvisation.dailyStreak, 7), target: 7 }),
+  },
+  {
     id: 'impro_jazz_5',
     title: 'Jazz cat',
     description: '5 minutos improvisando en estilo jazz.',

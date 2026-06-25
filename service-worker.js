@@ -1,4 +1,4 @@
-const CACHE = 'basslab-v13';
+const CACHE = 'basslab-v16';
 const ASSETS = [
   '.',
   'index.html',
@@ -45,6 +45,7 @@ const ASSETS = [
   'js/modules/section-collapse.js',
   'js/modules/sticky-fretboard.js',
   'js/modules/debug-console.js',
+  'js/modules/improv-records.js',
   'icon.png',
   'favicon_io/favicon.ico',
   'favicon_io/favicon-16x16.png',

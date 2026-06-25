@@ -2,7 +2,7 @@ import { NOTES } from './constants.js';
 import { noteToDisplay } from './constants.js';
 import { $ } from '../utils/dom.js';
 import { TUNINGS, TUNING_LABELS } from './constants.js';
-import { noteToTuningMidi, getScaleNotes, getChordNotes } from './theory.js';
+import { noteToTuningMidi, getScaleNotes, getChordNotes, getArpeggioNotes, noteIndex } from './theory.js';
 import * as fretboard from './fretboard.js';
 import * as tunerEngine from './tuner-engine.js';
 import * as tunerUi from './tuner-ui.js';
@@ -30,6 +30,7 @@ import { initHelpModal } from './help-modal.js';
 import { initNewsModal } from './news-modal.js';
 import { initMobileTabs } from './mobile-tabs.js';
 import { loadSettings, saveSettings } from './settings.js';
+import * as improvRecords from './improv-records.js';
 
 /* ─── State ─── */
 const state = {
@@ -38,6 +39,7 @@ const state = {
   tuning:        'standard',
   showAllNotes:  true,
   showNoteNames:  true,
+  showChordFunctions: false,
   fretFrom:       0,
   fretTo:         24,
   arpeggioType:   'none',
@@ -59,9 +61,65 @@ const state = {
   customTuningNotes:  ['E', 'A', 'D', 'G'],
 };
 
-const improvisationState = { chordTones: null, scaleNotes: null };
+const improvisationState = { chordTones: null, scaleNotes: null, degreeMap: null };
+
+let lastNotePerformance = null;
+let lastResultContext = null;
 
 let _settingsLoaded = false;
+
+function refreshImprovDailyStreak() {
+  try {
+    const raw = localStorage.getItem('basslab_practice_time');
+    if (!raw) {
+      improUi.showDailyStreak(0);
+      return;
+    }
+    const data = JSON.parse(raw);
+    const improvDays = new Set();
+    for (const [date, val] of Object.entries(data)) {
+      if (val && typeof val === 'object' && (val.improvisation || 0) > 0) {
+        improvDays.add(date);
+      }
+    }
+    if (improvDays.size === 0) {
+      improUi.showDailyStreak(0);
+      return;
+    }
+    const dates = Array.from(improvDays).sort();
+    const today = new Date();
+    const todayKey = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    let current = 0;
+    for (let i = 0; i < 365; i++) {
+      const check = new Date(today);
+      check.setDate(check.getDate() - i);
+      const key = check.getFullYear() + '-' + String(check.getMonth() + 1).padStart(2, '0') + '-' + String(check.getDate()).padStart(2, '0');
+      if (improvDays.has(key)) {
+        current++;
+      } else if (i === 0 && key === todayKey) {
+        continue;
+      } else {
+        break;
+      }
+    }
+    improUi.showDailyStreak(current);
+  } catch {
+    improUi.showDailyStreak(0);
+  }
+}
+
+function refreshDifficultyMasteryBadges() {
+  try {
+    const all = improvRecords.getAll();
+    const byDiff = {};
+    for (const [k, v] of Object.entries(all)) {
+      if (!v || !v.mastered) continue;
+      const [, diff] = k.split('|');
+      if (diff && !byDiff[diff]) byDiff[diff] = true;
+    }
+    improUi.updateDifficultyMastery(byDiff);
+  } catch {}
+}
 
 function improChordDisplay(root, type, notation) {
   const labels = {
@@ -85,6 +143,7 @@ function autoSave() {
     arpeggioType: state.arpeggioType,
     soloArpeggio: state.soloArpeggio,
     showNames: state.showNoteNames,
+    showChordFunctions: state.showChordFunctions,
     minFret: state.fretFrom,
     maxFret: state.fretTo,
     backingStyle: bs.style,
@@ -459,6 +518,7 @@ export function init() {
   state.arpeggioType  = saved.arpeggioType;
   state.soloArpeggio  = saved.soloArpeggio;
   state.showNoteNames = saved.showNames;
+  state.showChordFunctions = saved.showChordFunctions ?? false;
   state.fretFrom      = saved.minFret;
   state.fretTo        = saved.maxFret;
   state.volume        = saved.synthVolume;
@@ -511,6 +571,10 @@ export function init() {
 
   _settingsLoaded = true;
 
+  window.__improvRecords = improvRecords;
+  refreshImprovDailyStreak();
+  refreshDifficultyMasteryBadges();
+
   setupTrainingCallbacks();
 
   improvisation.setCallbacks({
@@ -525,10 +589,18 @@ export function init() {
     onChordChange({ chord, type, label }) {
       const ct = getChordNotes(chord, type);
       const sn = getScaleNotes(state.rootNote, state.scaleType);
+      let arp = getArpeggioNotes(chord, type);
+      if (!arp && type === 'power') {
+        const rootIdx = noteIndex(chord);
+        const fifth = NOTES[(rootIdx + 7) % 12];
+        arp = { notes: [chord, fifth], degrees: { [chord]: 'R', [fifth]: '5' } };
+      }
+      const degreeMap = arp && arp.degrees ? arp.degrees : null;
       improvisationState.chordTones = ct;
       improvisationState.scaleNotes = sn;
+      improvisationState.degreeMap = degreeMap;
       improUi.updateChord(improChordDisplay(chord, type || 'power', state.notation));
-      fretboard.renderImprovisation(state, ct, sn);
+      fretboard.renderImprovisation(state, ct, sn, degreeMap);
     },
     onTargetChange({ note, intervalMs }) {
       if (note) {
@@ -542,6 +614,23 @@ export function init() {
     onTargetBuild({ progress }) {
       improUi.showTargetBuild(progress);
     },
+    onTargetPreview({ note }) {
+      if (note) {
+        improUi.playPreviewNote(note, 350);
+      }
+    },
+    onChallengeStart(challenge) {
+      if (challenge) {
+        improUi.showChallenge(challenge);
+        lastNotePerformance = null;
+      }
+    },
+    onChallengeProgress(progress) {
+      improUi.updateChallenge(progress);
+    },
+    onChallengeComplete({ bonus }) {
+      improUi.showChallengeComplete(bonus);
+    },
   });
 
   backing.setCallbacks({
@@ -551,7 +640,15 @@ export function init() {
       const tl = backing.getTimelineData();
       improUi.renderTimeline(tl.bars, tl.current, state.notation);
     },
+    onBeat(beatInfo) {
+      if (state.improvisationActive) {
+        improvisation.updateBeat(beatInfo);
+        improUi.updateBeat(beatInfo);
+      }
+    },
   });
+
+  improUi.setBeatsPerBar(4);
 
   statsUi.init();
 
@@ -620,6 +717,18 @@ export function init() {
   $('#showNoteNames').addEventListener('change', (e) => {
     state.showNoteNames = e.target.checked;
     fretboard.renderScale(state);
+    autoSave();
+  });
+
+  $('#improChordFunctions').checked = state.showChordFunctions;
+  $('#improChordFunctions').addEventListener('change', (e) => {
+    state.showChordFunctions = e.target.checked;
+    if (state.improvisationActive) {
+      const tl = backing.getTimelineData();
+      fretboard.renderImprovisation(state, improvisationState.chordTones || [], improvisationState.scaleNotes || []);
+    } else {
+      fretboard.renderScale(state);
+    }
     autoSave();
   });
 
@@ -845,29 +954,7 @@ export function init() {
       if (bMins > 0) addPointsWithToast(bMins * 4, 'backing', bMins + ' min pista');
       state.backingActive = false;
       backingUi.setPlayIcon(false);
-      if (state.improvisationActive) {
-        const results = improvisation.stop();
-        const iElapsed = practiceTime.stop('improvisation');
-        const iMins = Math.floor(iElapsed / 60);
-        if (iMins > 0) addPointsWithToast(iMins * 8, 'improvisation', iMins + ' min improvisaci\u00f3n');
-        if (results) {
-          achievements.recordImprovisationResult({
-            difficulty: results.difficulty,
-            guided: results.guided,
-            maxStreak: results.maxStreak,
-            style: backing.getState().style,
-            durationSec: results.duration,
-          });
-          stats.recordImprovisation(results);
-          statsUi.render();
-          populateStatsFilter();
-        }
-        improUi.renderResults(results);
-        fretboard.clearTarget();
-        fretboard.renderScale(state);
-        improvisationState.chordTones = null;
-        improvisationState.scaleNotes = null;
-      }
+      stopImproSession();
     } else {
       backing.stop();
       if (audioEl) { audioEl.pause(); audioEl = null; }
@@ -878,28 +965,35 @@ export function init() {
       achievements.recordSource('backing');
       practiceTime.start('backing');
       backingUi.setPlayIcon(true);
-      if (state.improvisationActive) {
-        improvisation.stop();
-        const diff = improUi.getDifficulty();
-        const guided = improUi.isGuided();
-        const bs = backing.getState();
-        improvisation.start(state.rootNote, state.scaleType, {
-          difficulty: diff,
-          bpm: bs.bpm,
-          guided,
-          guidedSource: guided ? improUi.getGuidedSource() : 'chord',
-          guidedSpeed: guided ? improUi.getGuidedSpeed() : 'bar',
-        });
-        practiceTime.start('improvisation');
-        improUi.renderActive('\u2014');
-        const tl2 = backing.getTimelineData();
-        improUi.renderTimeline(tl2.bars, tl2.current, state.notation);
-      }
+      state.improvisationActive = true;
+      const diff = improUi.getDifficulty();
+      const guided = improUi.isGuided();
+      const bs = backing.getState();
+      improvisation.start(state.rootNote, state.scaleType, {
+        difficulty: diff,
+        bpm: bs.bpm,
+        guided,
+        guidedSource: guided ? improUi.getGuidedSource() : 'chord',
+        guidedSpeed: guided ? improUi.getGuidedSpeed() : 'bar',
+      });
+      achievements.recordSource('improvisation');
+      practiceTime.start('improvisation');
+      improUi.renderActive('\u2014');
+      const tl2 = backing.getTimelineData();
+      improUi.renderTimeline(tl2.bars, tl2.current, state.notation);
     }
   });
 
   backingUi.onBpmChange((bpm) => {
     backing.setBpm(bpm);
+    if (improvisation.isActive() && state.improvisationActive) {
+      improvisation.setGuided(
+        improUi.isGuided(),
+        improUi.getGuidedSource(),
+        improUi.getGuidedSpeed(),
+        bpm
+      );
+    }
     autoSave();
   });
 
@@ -1214,6 +1308,15 @@ export function init() {
   });
 
   backingUi.bindStyleButtons((style) => {
+    if (style === 'free') {
+      return;
+    }
+    backingUi.setFreeActive(false);
+    if (improvisation.isActive()) {
+      stopImproSession();
+    }
+    backingUi.setStyleButtonsEnabled(true);
+    improUi.renderActive('\u2014', false);
     if (style === 'upload') {
       const iElapsed = practiceTime.stop('improvisation');
       const iMins = Math.floor(iElapsed / 60);
@@ -1252,6 +1355,46 @@ export function init() {
       practiceTime.start('backing');
     }
     backingUi.setPlayIcon(state.backingActive);
+  });
+
+  backingUi.onFreeClick(() => {
+    if (improvisation.isActive()) {
+      stopImproSession();
+      return;
+    }
+    if (backing.isPlaying()) {
+      backing.stop();
+      state.backingActive = false;
+      backingUi.setPlayIcon(false);
+    }
+    backingUi.setStyleButtonsEnabled(false);
+    backingUi.setFreeActive(true);
+    state.improvisationActive = true;
+    const diff = improUi.getDifficulty();
+    const guided = improUi.isGuided();
+    const freeAdvance = improUi.getFreeAdvance();
+    improvisation.start(state.rootNote, state.scaleType, {
+      difficulty: diff,
+      bpm: 90,
+      guided,
+      guidedSource: guided ? improUi.getGuidedSource() : 'chord',
+      guidedSpeed: guided ? improUi.getGuidedSpeed() : 'bar',
+      freeMode: true,
+      freeAdvance,
+      startChord: state.rootNote,
+      startChordType: 'power',
+    });
+    achievements.recordSource('improvisation');
+    practiceTime.start('improvisation');
+    const ct = getChordNotes(state.rootNote, 'power');
+    const sn = getScaleNotes(state.rootNote, state.scaleType);
+    const rootIdx = noteIndex(state.rootNote);
+    improvisationState.chordTones = ct;
+    improvisationState.scaleNotes = sn;
+    improvisationState.degreeMap = { [state.rootNote]: 'R', [NOTES[(rootIdx + 7) % 12]]: '5' };
+    improUi.renderActive(state.rootNote);
+    fretboard.renderImprovisation(state, ct, sn, improvisationState.degreeMap);
+    improUi.renderFreeTimeline();
   });
 
   backingUi.onFileChange((files) => {
@@ -1294,54 +1437,55 @@ export function init() {
     });
   });
 
-  $('#improToggle').addEventListener('change', (e) => {
-    state.improvisationActive = e.target.checked;
-    if (state.improvisationActive) {
-      if (backing.isPlaying()) {
-        const diff = improUi.getDifficulty();
-        const guided = improUi.isGuided();
-        const bs = backing.getState();
-        improvisation.start(state.rootNote, state.scaleType, {
-          difficulty: diff,
-          bpm: bs.bpm,
-          guided,
-          guidedSource: guided ? improUi.getGuidedSource() : 'chord',
-          guidedSpeed: guided ? improUi.getGuidedSpeed() : 'bar',
-        });
-        achievements.recordSource('improvisation');
-        practiceTime.start('improvisation');
-        improUi.renderActive('\u2014');
-        const tl3 = backing.getTimelineData();
-        improUi.renderTimeline(tl3.bars, tl3.current, state.notation);
-      } else {
-        improUi.renderActive('\u2014', false);
-      }
-    } else {
-      if (improvisation.isActive()) {
-        const results = improvisation.stop();
-        const iElapsed4 = practiceTime.stop('improvisation');
-        const iMins4 = Math.floor(iElapsed4 / 60);
-        if (iMins4 > 0) addPointsWithToast(iMins4 * 8, 'improvisation', iMins4 + ' min improvisaci\u00f3n');
-        if (results) {
-          achievements.recordImprovisationResult({
-            difficulty: results.difficulty,
-            guided: results.guided,
-            maxStreak: results.maxStreak,
-            style: backing.getState().style,
-            durationSec: results.duration,
-          });
-          stats.recordImprovisation(results);
-          statsUi.render();
-          populateStatsFilter();
-        }
-        improUi.renderResults(results);
-        fretboard.clearTarget();
-        fretboard.renderScale(state);
-        improvisationState.chordTones = null;
-        improvisationState.scaleNotes = null;
-      }
+
+  function stopImproSession() {
+    backingUi.setFreeActive(false);
+    if (!improvisation.isActive()) {
+      state.improvisationActive = false;
+      improUi.renderIdle();
+      fretboard.clearTarget();
+      fretboard.renderScale(state);
+      improvisationState.chordTones = null;
+      improvisationState.scaleNotes = null;
+      improvisationState.degreeMap = null;
+      improUi.hideChallenge();
+      return;
     }
-  });
+    state.improvisationActive = false;
+    const results = improvisation.stop();
+    const elapsed = practiceTime.stop('improvisation');
+    const mins = Math.floor(elapsed / 60);
+    if (mins > 0) addPointsWithToast(mins * 8, 'improvisation', mins + ' min improvisación');
+    if (results) {
+      achievements.recordImprovisationResult({
+        difficulty: results.difficulty,
+        guided: results.guided,
+        maxStreak: results.maxStreak,
+        style: backing.getState().style,
+        durationSec: results.duration,
+      });
+      stats.recordImprovisation(results);
+      statsUi.render();
+      populateStatsFilter();
+      const r = window.__improvRecords;
+      if (r) r.updateBest(results, {
+        style: backing.getState().style,
+        difficulty: improUi.getDifficulty(),
+        guided: improUi.isGuided(),
+        freeMode: !!results.freeMode,
+      });
+      refreshImprovDailyStreak();
+      refreshDifficultyMasteryBadges();
+    }
+    improUi.renderResults(results);
+    fretboard.clearTarget();
+    fretboard.renderScale(state);
+    improvisationState.chordTones = null;
+    improvisationState.scaleNotes = null;
+    improvisationState.degreeMap = null;
+    improUi.hideChallenge();
+    backingUi.setStyleButtonsEnabled(true);
+  }
 
   if ($('#improGuided')) {
     $('#improGuided').addEventListener('change', () => {

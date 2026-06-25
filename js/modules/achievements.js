@@ -195,6 +195,38 @@ function getGoalDaysInRow(dailyMs, goalMinutes) {
   return streak;
 }
 
+function getImprovDailyStreak() {
+  try {
+    const raw = localStorage.getItem('basslab_practice_time');
+    if (!raw) return 0;
+    const data = JSON.parse(raw);
+    const improvDays = new Set();
+    for (const [date, val] of Object.entries(data)) {
+      if (val && typeof val === 'object' && (val.improvisation || 0) > 0) {
+        improvDays.add(date);
+      }
+    }
+    if (improvDays.size === 0) return 0;
+    const today = new Date();
+    let current = 0;
+    for (let i = 0; i < 365; i++) {
+      const check = new Date(today);
+      check.setDate(check.getDate() - i);
+      const key = check.getFullYear() + '-' + String(check.getMonth() + 1).padStart(2, '0') + '-' + String(check.getDate()).padStart(2, '0');
+      if (improvDays.has(key)) {
+        current++;
+      } else if (i === 0) {
+        continue;
+      } else {
+        break;
+      }
+    }
+    return current;
+  } catch {
+    return 0;
+  }
+}
+
 function buildSnapshot(unlockedIds) {
   const tracker = getTracker();
   const dailyMs = practiceTime.getDailyMinutes();
@@ -259,6 +291,7 @@ function buildSnapshot(unlockedIds) {
       bootsySessions: tracker.improvisationBootsySessions || 0,
       maxStreak: tracker.improvisationMaxStreak || 0,
       jazzMinutes: Math.floor((tracker.improvisationJazzSeconds || 0) / 60),
+      dailyStreak: getImprovDailyStreak(),
     },
     training: {
       totalRounds: trainingTotalRounds,

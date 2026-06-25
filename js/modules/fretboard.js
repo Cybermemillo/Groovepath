@@ -238,8 +238,9 @@ export function clearImprovisation() {
   guidedTargetNote = null;
 }
 
-export function renderImprovisation(state, chordTones, scaleNotes) {
+export function renderImprovisation(state, chordTones, scaleNotes, degreeMap) {
   const detectedNote = state.detectedNote;
+  const showFunctions = state.showChordFunctions && degreeMap;
 
   dotsCache.forEach(dot => {
     const note = dot.dataset.dotNote;
@@ -253,13 +254,17 @@ export function renderImprovisation(state, chordTones, scaleNotes) {
       return;
     }
 
-    if (textSpan) {
-      textSpan.textContent = showNames ? noteToDisplay(note, notation) : '';
-    }
-
     const isDetected = detectedNote && note === detectedNote;
     const inChord = chordTones && chordTones.includes(note);
     const inScale = scaleNotes && scaleNotes.includes(note);
+
+    if (textSpan) {
+      if (showFunctions && inChord && degreeMap[note]) {
+        textSpan.textContent = degreeMap[note];
+      } else {
+        textSpan.textContent = showNames ? noteToDisplay(note, notation) : '';
+      }
+    }
 
     let cls = 'note-dot';
 
@@ -276,4 +281,37 @@ export function renderImprovisation(state, chordTones, scaleNotes) {
 
     dot.className = cls;
   });
+}
+
+export function renderHeatmap(state, notePerformance) {
+  const perf = notePerformance || {};
+  let maxPlays = 0;
+  for (const k of Object.keys(perf)) {
+    const total = (perf[k].correct || 0) + (perf[k].wrong || 0);
+    if (total > maxPlays) maxPlays = total;
+  }
+  dotsCache.forEach(dot => {
+    const note = dot.dataset.dotNote;
+    const fret = parseInt(dot.dataset.dotFret);
+
+    if (fret < state.fretFrom || fret > state.fretTo) {
+      dot.className = 'note-dot';
+      return;
+    }
+
+    const p = perf[note];
+    let cls = 'note-dot';
+    if (!p) {
+      cls += ' heatmap-miss';
+    } else {
+      const total = (p.correct || 0) + (p.wrong || 0);
+      const acc = total > 0 ? p.correct / total : 0;
+      if (acc >= 0.85) cls += ' heatmap-hot';
+      else if (acc >= 0.6) cls += ' heatmap-warm';
+      else cls += ' heatmap-cold';
+    }
+    dot.className = cls;
+  });
+  guidedTargetNote = null;
+  targetNote = null;
 }

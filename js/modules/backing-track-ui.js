@@ -13,7 +13,18 @@ export function render(state) {
   bpmSlider.value = state.bpm;
   bpmValue.textContent = state.bpm;
   styleBtns.forEach(b => {
-    b.classList.toggle('active', b.dataset.style === state.style);
+    const isFree = b.dataset.style === 'free';
+    const isActive = b.dataset.style === state.style;
+    b.classList.toggle('active', isActive && !isFree);
+    b.classList.toggle('free-active', isActive && isFree);
+  });
+}
+
+export function setStyleButtonsEnabled(enabled) {
+  styleBtns.forEach(b => {
+    if (b.dataset.style === 'free') return;
+    b.disabled = !enabled;
+    b.style.opacity = enabled ? '' : '0.4';
   });
 }
 
@@ -44,11 +55,25 @@ export function onBpmChange(fn) {
 export function bindStyleButtons(onClick) {
   styleBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      styleBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
       if (typeof onClick === 'function') onClick(btn.dataset.style);
     });
   });
+}
+
+export function setFreeActive(on) {
+  const freeBtn = document.querySelector('.style-free');
+  if (freeBtn) {
+    freeBtn.classList.toggle('free-active', on);
+  }
+}
+
+export function onFreeClick(fn) {
+  const freeBtn = document.querySelector('.style-free');
+  if (freeBtn) {
+    freeBtn.addEventListener('click', () => {
+      if (typeof fn === 'function') fn();
+    });
+  }
 }
 
 export function onFileChange(fn) {

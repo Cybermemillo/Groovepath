@@ -5,6 +5,37 @@ const STORAGE_KEY = 'basslab_news_seen';
 const UPDATES = [
   {
     date: '2026-06-25',
+    version: 'v1.4',
+    title: 'BassLab v1.4 \u2014 Gamificaci\u00f3n y aprendizaje profundo',
+    body: 'Fase 3 del modo improvisaci\u00f3n: ' +
+      'r\u00e9cords personales por estilo/dificultad/modo. ' +
+      'Mini-desaf\u00edos por sesi\u00f3n con bonus de puntos (5 notas del acorde seguidas, 3 targets, 0 fallos, etc). ' +
+      'Racha diaria de improvisaci\u00f3n con badge visual y nuevo logro a los 7 d\u00edas. ' +
+      'Mapa caliente/fr\u00edo del diapas\u00f3n tras la sesi\u00f3n: verde si la nota fue precisa, amarillo tibia, rojo fr\u00eda, gris si no la tocaste. ' +
+      'Insignia de "Dominado" en las dificultades donde cumplas los umbrales.',
+  },
+  {
+    date: '2026-06-25',
+    version: 'v1.3',
+    title: 'BassLab v1.3 \u2014 Ritmo y escucha guiada',
+    body: 'Fase 2 del modo improvisaci\u00f3n: ' +
+      'pulso visual de beat (4 puntos) sincronizado con la pista y barra de progreso del comp\u00e1s. ' +
+      'Cuenta atr\u00e1s visual del cambio de acorde (flash en el \u00faltimo beat). ' +
+      'Modo escucha-y-repite: la nota objetivo suena al aparecer y se repite cada 1.8 s mientras no la aciertes. ' +
+      'Bonus sutil de timing (+20 pts) cuando tocas una nota del acorde en los tiempos fuertes (1 y 3).',
+  },
+  {
+    date: '2026-06-25',
+    version: 'v1.2',
+    title: 'BassLab v1.2 \u2014 Mejoras del modo improvisaci\u00f3n',
+    body: 'Fase 1 de la reescritura del modo improvisaci\u00f3n: ' +
+      'mostrar funciones del acorde (R, 3, 5, 7) en el diapas\u00f3n durante la sesi\u00f3n (toggle opcional). ' +
+      'Sincronizaci\u00f3n del objetivo guiado al reloj de audio: los cambios de BPM ya no desajustan el target. ' +
+      'Modo libre sin backing track con elecci\u00f3n entre acorde fijo en ra\u00edz o avance autom\u00e1tico cada N compases. ' +
+      'Pantalla de resultados mejorada: precisi\u00f3n por acorde, contador de objetivos, consejos personalizados.',
+  },
+  {
+    date: '2026-06-25',
     version: 'v1.1',
     title: 'BassLab v1.1 \u2014 Juice y mejoras de UX',
     body: 'Entrenamiento m\u00e1s jugoso: animaciones de acierto y fallo, pop en la racha, colores por nivel de combo, barra de progreso, cuenta atr\u00e1s con colores y resultados animados con rango S/A/B/C. ' +
