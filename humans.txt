@@ -1,0 +1,10 @@
+# humanstxt.org
+/* TEAM */
+  Developer: Memo
+/* SITE */
+  Last update: 2026-06-27
+  Language: Spanish
+  Standards: HTML5, CSS3, ES6
+  Components: Font Awesome, Google Fonts
+/* THANKS */
+  Name: You, por practicar bajo

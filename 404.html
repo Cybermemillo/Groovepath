@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — Groovepath</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0F0D0A;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      color: #ccc;
+    }
+    .wrapper { text-align: center; padding: 2rem; }
+    h1 { font-family: 'Rajdhani', sans-serif; font-size: 5rem; color: #41B39A; margin-bottom: 0.5rem; }
+    p { font-size: 1.1rem; color: #888; margin-bottom: 2rem; }
+    a { color: #41B39A; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .redirect { font-size: 0.85rem; color: #555; margin-top: 2rem; }
+  </style>
+  <script>
+    setTimeout(function () {
+      window.location.replace('./');
+    }, 4000);
+  </script>
+</head>
+<body>
+  <div class="wrapper">
+    <h1>404</h1>
+    <p>Esta p&aacute;gina no existe. No te preocupes, a veces el bajista tambi&eacute;n se pierde.</p>
+    <p><a href="./">Volver a Groovepath</a></p>
+    <p class="redirect">Ser&aacute;s redirigido autom&aacute;ticamente en unos segundos&hellip;</p>
+  </div>
+</body>
+</html>
